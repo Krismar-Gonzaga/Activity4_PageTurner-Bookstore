@@ -340,6 +340,79 @@
     .hover-lift:hover {
         transform: translateY(-2px);
     }
+
+    /* Stock Information */
+    .stock-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        padding: 0.5rem 0.75rem;
+        background: rgba(245, 235, 220, 0.3);
+        border-radius: 0.5rem;
+        border-left: 3px solid;
+    }
+
+    .stock-info.in-stock {
+        border-left-color: #10b981;
+    }
+
+    .stock-info.low-stock {
+        border-left-color: #f59e0b;
+    }
+
+    .stock-info.out-of-stock {
+        border-left-color: #ef4444;
+    }
+
+    .stock-indicator {
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 9999px;
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% {
+            opacity: 1;
+        }
+        50% {
+            opacity: 0.5;
+        }
+    }
+
+    .stock-text {
+        font-size: 0.875rem;
+        color: #374151;
+    }
+
+    .stock-badge {
+        position: absolute;
+        top: 0.75rem;
+        right: 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.25rem 0.75rem;
+        border-radius: 9999px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        z-index: 5;
+        backdrop-filter: blur(4px);
+    }
+
+    .stock-badge.in-stock {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+
+    .stock-badge.low-stock {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+    }
+
+    .stock-badge.out-of-stock {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+    }
 </style>
 
 <div class="book-card" >
@@ -402,6 +475,24 @@
         <p class="book-price">
             ${{ number_format($book->price, 2) }}
         </p>
+        
+        <!-- Stock Information  -->
+        @if($book->stock_quantity > 0)
+            <div class="stock-info mb-3 flex items-center gap-2">
+                <div class="stock-indicator w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+                <span class="stock-text text-sm">
+                    <span class="font-semibold text-green-600">{{ $book->stock_quantity }} available</span>
+                    @if($book->stock_quantity <= 5)
+                        <span class="text-orange-500 text-xs ml-1">(Low stock!)</span>
+                    @endif
+                </span>
+            </div>
+        @else
+            <div class="stock-info mb-3 flex items-center gap-2">
+                <div class="stock-indicator w-3 h-3 rounded-full bg-red-500"></div>
+                <span class="stock-text text-sm font-semibold text-red-600">Out of Stock</span>
+            </div>
+        @endif
 
         <!-- Star Rating -->
         <div class="rating-section">

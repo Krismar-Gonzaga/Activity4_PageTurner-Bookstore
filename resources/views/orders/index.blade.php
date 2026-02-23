@@ -5,7 +5,7 @@
 @section('header')
     <div class="flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-bold page-turner-font text-[var(--pageturner-dark)]">
+            <h1 class="text-3xl font-bold page-turner-font text-white">
                 @if(Auth::user()->isAdmin())
                     All Orders
                 @else

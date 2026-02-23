@@ -5,7 +5,7 @@
 @section('header')
     <div class="flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-bold page-turner-font text-[var(--pageturner-dark)]">{{ $category->name }}</h1>
+            <h1 class="text-3xl font-bold page-turner-font text-white">{{ $category->name }}</h1>
             <p class="text-gray-100/80 mt-2">Browse all books in this category</p>
         </div>
         <a href="{{ route('categories.index') }}" 

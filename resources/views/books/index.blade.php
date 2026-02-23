@@ -36,7 +36,7 @@
     /* Main Container with Left/Right Margins */
     .main-container {
         max-width: 1440px;
-        
+        margin-left: -3rem;
         
         
     }
@@ -418,7 +418,7 @@
     .books-grid {
         display: grid;
         grid-template-columns: 1fr;
-        gap: 1.0rem;
+        gap: 4.0rem;
     }
 
     @media (min-width: 640px) {
@@ -853,36 +853,36 @@
                         class="advanced-toggle">
                     <span>Advanced Filters</span>
                     <svg class="toggle-icon" 
-                         :class="{ 'rotated': showAdvanced }" 
-                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        :class="{ 'rotated': showAdvanced }" 
+                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                     </svg>
                 </button>
                 
                 <div x-show="showAdvanced" 
-                     x-transition:enter="transition ease-out duration-200"
-                     x-transition:enter-start="opacity-0"
-                     x-transition:enter-end="opacity-100"
-                     class="advanced-panel">
+                    x-transition:enter="transition ease-out duration-200"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"
+                    class="advanced-panel">
                     <div class="advanced-grid">
-                        <!-- Stock Status -->
+                        <!-- Stock Status - Now using stock_quantity -->
                         <div>
                             <label class="filter-label">Stock Status</label>
                             <div class="checkbox-group">
                                 <label class="checkbox-label">
                                     <input type="checkbox" 
-                                           name="in_stock" 
-                                           value="1" 
-                                           {{ request('in_stock') ? 'checked' : '' }}
-                                           class="checkbox-input">
+                                        name="in_stock" 
+                                        value="1" 
+                                        {{ request('in_stock') ? 'checked' : '' }}
+                                        class="checkbox-input">
                                     <span class="checkbox-text">In Stock Only</span>
                                 </label>
                                 <label class="checkbox-label">
                                     <input type="checkbox" 
-                                           name="low_stock" 
-                                           value="1" 
-                                           {{ request('low_stock') ? 'checked' : '' }}
-                                           class="checkbox-input">
+                                        name="low_stock" 
+                                        value="1" 
+                                        {{ request('low_stock') ? 'checked' : '' }}
+                                        class="checkbox-input">
                                     <span class="checkbox-text">Low Stock (1-5 items)</span>
                                 </label>
                             </div>
@@ -899,16 +899,16 @@
                             </select>
                         </div>
                         
-                        <!-- Publication Year -->
+                        <!-- Publication Year - Using published_year -->
                         <div>
                             <label class="filter-label">Publication Year</label>
                             <input type="number" 
-                                   name="year" 
-                                   value="{{ request('year') }}"
-                                   placeholder="e.g., 2023"
-                                   min="1900" 
-                                   max="{{ date('Y') }}"
-                                   class="search-input">
+                                name="year" 
+                                value="{{ request('year') }}"
+                                placeholder="e.g., 2023"
+                                min="1900" 
+                                max="{{ date('Y') }}"
+                                class="search-input">
                         </div>
                     </div>
                 </div>
@@ -958,25 +958,47 @@
                             <span class="filter-tag">
                                 Category: {{ $selectedCategory->name ?? 'Unknown' }}
                                 <a href="{{ url()->current() . '?' . http_build_query(request()->except('category')) }}" 
-                                   class="tag-remove">
+                                class="tag-remove">
                                     &times;
                                 </a>
                             </span>
                         @endif
+                        
                         @if(request('in_stock'))
                             <span class="filter-tag in-stock">
                                 In Stock Only
                                 <a href="{{ url()->current() . '?' . http_build_query(request()->except('in_stock')) }}" 
-                                   class="tag-remove">
+                                class="tag-remove">
                                     &times;
                                 </a>
                             </span>
                         @endif
+                        
+                        @if(request('low_stock'))
+                            <span class="filter-tag">
+                                Low Stock
+                                <a href="{{ url()->current() . '?' . http_build_query(request()->except('low_stock')) }}" 
+                                class="tag-remove">
+                                    &times;
+                                </a>
+                            </span>
+                        @endif
+                        
                         @if(request('min_rating'))
                             <span class="filter-tag rating">
                                 {{ request('min_rating') }}+ Stars
                                 <a href="{{ url()->current() . '?' . http_build_query(request()->except('min_rating')) }}" 
-                                   class="tag-remove">
+                                class="tag-remove">
+                                    &times;
+                                </a>
+                            </span>
+                        @endif
+                        
+                        @if(request('year'))
+                            <span class="filter-tag">
+                                Year: {{ request('year') }}
+                                <a href="{{ url()->current() . '?' . http_build_query(request()->except('year')) }}" 
+                                class="tag-remove">
                                     &times;
                                 </a>
                             </span>
@@ -1027,13 +1049,30 @@
 
 @push('scripts')
 <script>
-    // Auto-submit form on filter changes (optional)
     document.addEventListener('DOMContentLoaded', function() {
-        const filters = document.querySelectorAll('select[name="sort"], select[name="price_range"], select[name="min_rating"]');
+        const form = document.getElementById('filter-form');
         
-        filters.forEach(filter => {
+        // Auto-submit for select changes
+        const selectFilters = document.querySelectorAll('select[name="sort"], select[name="price_range"], select[name="min_rating"], select[name="category"]');
+        
+        selectFilters.forEach(filter => {
             filter.addEventListener('change', function() {
-                this.form.submit();
+                form.submit();
+            });
+        });
+        
+        // Optional: Auto-submit for checkbox changes (with debounce)
+        const checkboxFilters = document.querySelectorAll('input[type="checkbox"]');
+        checkboxFilters.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                // Update hidden inputs
+                if (this.id === 'in_stock_checkbox') {
+                    document.getElementById('in_stock_hidden').disabled = this.checked;
+                }
+                if (this.id === 'low_stock_checkbox') {
+                    document.getElementById('low_stock_hidden').disabled = this.checked;
+                }
+                form.submit();
             });
         });
     });

@@ -6,6 +6,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\Admin\DashboardController;
 use Illuminate\Support\Facades\Route;
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -42,6 +43,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::put('/profile/picture', [ProfileController::class, 'updatePicture'])->name('profile.picture.update');
+    Route::delete('/profile/picture', [ProfileController::class, 'removePicture'])->name('profile.picture.remove');
+
     // Review routes
     Route::post('/books/{book}/reviews', [ReviewController::class,'store'])->name('reviews.store');
     Route::delete('/reviews/{review}', [ReviewController::class,'destroy'])->name('reviews.destroy');
@@ -56,6 +60,8 @@ Route::middleware('auth')->group(function () {
 // Admin-only routes (Category & Book management)
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
     // Category management
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
     Route::get('/categories/create', [CategoryController::class,'create'])->name('categories.create');
     Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
     Route::get('/categories/{category}/edit',[CategoryController::class, 'edit'])->name('categories.edit');

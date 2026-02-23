@@ -511,7 +511,7 @@
         <section id="categories" class="section-gap">
             <div class="section-header">
                 <div>
-                    <h2 class="section-title page-turner-font">Explore Genres</h2>
+                    <h2 class="section-link">Explore Genres</h2>
                     <p class="section-subtitle">Find your next favorite story</p>
                 </div>
                 <a href="{{ route('categories.index') }}" class="section-link">
@@ -546,7 +546,7 @@
         <section class="section-gap">
             <div class="section-header">
                 <div>
-                    <h2 class="section-title page-turner-font">Featured Titles</h2>
+                    <h2 class="section-link" >Featured Titles</h2>
                     <p class="section-subtitle">Handpicked stories our readers love</p>
                 </div>
                 <a href="{{ route('books.index') }}" class="section-link">

@@ -5,7 +5,7 @@
 @section('header')
     <div class="flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-bold page-turner-font text-[var(--pageturner-dark)]">Add New Book</h1>
+            <h1 class="text-3xl font-bold page-turner-font text-white">Add New Book</h1>
             <p class="text-gray-100/80 mt-2">Add a new book to the PageTurner collection</p>
         </div>
         <a href="{{ route('books.index') }}" 

@@ -5,7 +5,7 @@
 @section('header')
     <div class="flex justify-between items-center">
         <div>
-            <h1 class="text-3xl font-bold page-turner-font text-[var(--pageturner-dark)]">Checkout</h1>
+            <h1 class="text-3xl font-bold page-turner-font text-white">Checkout</h1>
             <p class="text-gray-100/80 mt-2">Complete your purchase</p>
         </div>
         <a href="{{ route('cart.index') }}" 

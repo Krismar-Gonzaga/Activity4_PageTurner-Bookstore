@@ -5,7 +5,7 @@
 @section('header')
     <div class="flex justify-between items-center" >
         <div>
-            <h1 class="text-3xl font-bold page-turner-font text-[var(--pageturner-dark)]">Edit Book</h1>
+            <h1 class="text-3xl font-bold page-turner-font text-white">Edit Book</h1>
             <p class="text-gray-100/80 mt-2">Update book information</p>
         </div>
         <a href="{{ route('books.show', $book) }}" 
