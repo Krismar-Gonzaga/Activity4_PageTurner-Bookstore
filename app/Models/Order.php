@@ -17,6 +17,7 @@ class Order extends Model
         'billing_address',
         'payment_method',
         'payment_status',
+        'phone',
         'tracking_number',
         'notes',
     ];

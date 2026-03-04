@@ -253,6 +253,34 @@
     .update-btn:hover {
         background: #D2691E;
     }
+
+    /* Add to your existing styles */
+    .stock-error-message {
+        animation: slideDown 0.3s ease;
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+
+    @keyframes slideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .quantity-field.error {
+        border-color: #ef4444 !important;
+        background-color: #fee2e2 !important;
+    }
+
+    /* Tooltip for max stock info */
+    .quantity-field[title] {
+        cursor: help;
+    }
 </style>
 
 <div class="cart-container">
@@ -290,6 +318,8 @@
                     <div class="cart-item-details">
                         <h3 class="cart-item-title">{{ $item['title'] }}</h3>
                         <p class="cart-item-author">Price: ${{ number_format($item['price'], 2) }}</p>
+                        <p class="text-sm text-gray-500">Available Stock: {{ $item['stock'] }}</p>
+
                     </div>
 
                     <div class="cart-item-actions">
@@ -299,7 +329,7 @@
                                 name="quantity" 
                                 value="{{ $item['quantity'] }}" 
                                 min="1" 
-                                max="{{ $item['stock'] ?? 10 }}"
+                                max="{{ $item['stock'] }}"
                                 class="quantity-input quantity-field" 
                                 data-item-id="{{ $id }}"
                                 data-price="{{ $item['price'] }}"
@@ -379,6 +409,9 @@ document.addEventListener('DOMContentLoaded', function() {
         inputElement.classList.add('updating');
         inputElement.style.opacity = '0.7';
         
+        // Remove any existing error message for this item
+        removeItemError(itemId);
+        
         fetch(`/cart/update/${itemId}`, {
             method: 'POST',
             headers: {
@@ -395,8 +428,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 inputElement.dataset.original = quantity;
                 inputElement.style.borderColor = '#10b981';
                 
+                // Update max attribute if provided
+                if (data.max_stock) {
+                    inputElement.max = data.max_stock;
+                }
+                
+                // Update totals with server-calculated values
+                updateCartTotal(data.total);
+                
                 // Show success indicator
-                showNotification('Cart updated', 'success');
+                showNotification(data.message, 'success');
                 
                 // Reset border after delay
                 setTimeout(() => {
@@ -407,16 +448,15 @@ document.addEventListener('DOMContentLoaded', function() {
                 inputElement.value = inputElement.dataset.original;
                 inputElement.style.borderColor = '#ef4444';
                 
-                // Show error
-                showNotification(data.message || 'Error updating cart', 'error');
+                
+                
+                // Show notification
+                showNotification(data.message, 'error');
                 
                 setTimeout(() => {
                     inputElement.style.borderColor = '#d1d5db';
                 }, 2000);
             }
-            
-            // Always update total (in case of revert)
-            updateCartTotal();
         })
         .catch(error => {
             console.error('Error:', error);
@@ -427,13 +467,70 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 inputElement.style.borderColor = '#d1d5db';
             }, 2000);
-            
-            updateCartTotal();
         })
         .finally(() => {
             inputElement.classList.remove('updating');
             inputElement.style.opacity = '1';
         });
+    }
+
+    function showStockError(itemId, message, maxStock) {
+        // Just show a floating notification instead of inline error
+        showNotification(message, 'error');
+        
+        // Highlight the quantity input briefly
+        const input = document.querySelector(`[data-item-id="${itemId}"]`);
+        if (input) {
+            input.style.borderColor = '#ef4444';
+            input.style.backgroundColor = '#fee2e2';
+            
+            // Reset styling after delay
+            setTimeout(() => {
+                input.style.borderColor = '#d1d5db';
+                input.style.backgroundColor = 'white';
+            }, 2000);
+        }
+        
+        // Update the max attribute to prevent future invalid entries
+        if (maxStock) {
+            input.max = maxStock;
+        }
+    }
+
+    function removeItemError(itemId) {
+        // Just reset input styling if needed
+        const input = document.querySelector(`[data-item-id="${itemId}"]`);
+        if (input) {
+            input.style.borderColor = '#d1d5db';
+            input.style.backgroundColor = 'white';
+        }
+    }
+
+    // Update this function to use the server total
+    function updateCartTotal(serverTotal = null) {
+        if (serverTotal !== null) {
+            // Use server-calculated total
+            const subtotalElement = document.querySelector('.summary-row:first-child span:last-child');
+            const totalElement = document.querySelector('.summary-total span:last-child');
+            
+            if (subtotalElement) subtotalElement.textContent = '$' + serverTotal.toFixed(2);
+            if (totalElement) totalElement.textContent = '$' + serverTotal.toFixed(2);
+        } else {
+            // Fallback to client-side calculation (for initial load or if server total not available)
+            let subtotal = 0;
+            document.querySelectorAll('.cart-item').forEach(item => {
+                const quantityInput = item.querySelector('.quantity-field');
+                const price = parseFloat(quantityInput?.dataset.price || 0);
+                const quantity = parseInt(quantityInput?.value || 0);
+                subtotal += price * quantity;
+            });
+            
+            const subtotalElement = document.querySelector('.summary-row:first-child span:last-child');
+            const totalElement = document.querySelector('.summary-total span:last-child');
+            
+            if (subtotalElement) subtotalElement.textContent = '$' + subtotal.toFixed(2);
+            if (totalElement) totalElement.textContent = '$' + subtotal.toFixed(2);
+        }
     }
 
     // Handle quantity changes
@@ -442,13 +539,56 @@ document.addEventListener('DOMContentLoaded', function() {
         input.dataset.original = input.value;
         
         input.addEventListener('input', function() {
-            // Live preview update
+            // Remove error styling when user starts typing
+            removeItemError(this.dataset.itemId);
+            
+            // Get current values
+            let quantity = parseInt(this.value);
+            const maxStock = parseInt(this.max) || 99;
+            const originalQuantity = parseInt(this.dataset.original);
+            
+            // Live preview update (always update total as user types)
             updateCartTotal();
             
-            // Visual feedback for unsaved change
-            if (this.value !== this.dataset.original) {
-                this.style.borderColor = '#8B4513';
-                this.style.backgroundColor = '#F5EBDC';
+            // Check if the new quantity is within stock limits
+            if (!isNaN(quantity) && quantity >= 1 && quantity <= maxStock) {
+                // Valid quantity within stock
+                this.style.borderColor = '#10b981';
+                this.style.backgroundColor = '#f0fdf4';
+                
+                // If it's different from original and within stock, auto-update after a short delay
+                if (quantity !== originalQuantity) {
+                    // Clear any pending timeout
+                    if (window.updateTimeout) clearTimeout(window.updateTimeout);
+                    
+                    // Auto-update after 1 second of valid input
+                    window.updateTimeout = setTimeout(() => {
+                        // Only update if still within stock
+                        const currentQuantity = parseInt(this.value);
+                        if (currentQuantity <= maxStock && currentQuantity >= 1) {
+                            updateCartItem(this.dataset.itemId, currentQuantity, this);
+                        }
+                    }, 1000);
+                }
+            } else if (!isNaN(quantity) && quantity > maxStock) {
+                // Quantity exceeds stock - show red but don't auto-update
+                this.style.borderColor = '#ef4444';
+                this.style.backgroundColor = '#fee2e2';
+                
+                // Clear any pending auto-update
+                if (window.updateTimeout) clearTimeout(window.updateTimeout);
+            }else {
+                // Invalid quantity (exceeds stock or below minimum)
+                this.style.borderColor = '#ef4444';
+                this.style.backgroundColor = '#fee2e2';
+                
+                // Clear any pending auto-update
+                if (window.updateTimeout) clearTimeout(window.updateTimeout);
+            }
+            
+            // Visual feedback for unsaved change (different from original)
+            if (quantity !== originalQuantity) {
+                // Already handled above with colors
             } else {
                 this.style.borderColor = '#d1d5db';
                 this.style.backgroundColor = 'white';
@@ -461,28 +601,54 @@ document.addEventListener('DOMContentLoaded', function() {
             const min = parseInt(this.min) || 1;
             const max = parseInt(this.max) || 99;
             
-            if (isNaN(quantity) || quantity < min) quantity = min;
-            if (quantity > max) quantity = max;
+            if (isNaN(quantity) || quantity < min) {
+                quantity = min;
+                this.value = min;
+            }
             
-            this.value = quantity;
-            
-            // Only update if value changed
+            // Only update if value changed and within stock limits
             if (quantity.toString() !== this.dataset.original) {
-                // Clear any pending timeout
-                if (updateTimeout) clearTimeout(updateTimeout);
-                
-                // Debounce the update
-                updateTimeout = setTimeout(() => {
+                if (quantity <= max) {
+                    // Valid quantity within stock - update immediately
                     updateCartItem(this.dataset.itemId, quantity, this);
-                }, 500); // Wait 500ms after user stops typing
+                } else {
+                    // Exceeds stock - set to max and update
+                    this.value = max;
+                    // Then show error message
+                    showNotification(`Only ${max} items available in stock.`, 'error');
+                    
+                    // Update with the max value
+                    updateCartItem(this.dataset.itemId, max, this);
+                    
+                    // Highlight the input briefly
+                    this.style.borderColor = '#ef4444';
+                    this.style.backgroundColor = '#fee2e2';
+                    setTimeout(() => {
+                        this.style.borderColor = '#d1d5db';
+                        this.style.backgroundColor = 'white';
+                    }, 2000);
+                }
             }
         });
         
-        // Also update on blur (when user leaves the field)
-        input.addEventListener('blur', function() {
-            if (this.value !== this.dataset.original) {
-                // Trigger the change event
-                this.dispatchEvent(new Event('change'));
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent form submission
+                
+                // Validate input
+                let quantity = parseInt(this.value);
+                const min = parseInt(this.min) || 1;
+                const max = parseInt(this.max) || 99;
+                
+                if (isNaN(quantity) || quantity < min) {
+                    quantity = min;
+                    this.value = min;
+                }
+                
+                // Only update if value changed
+                if (quantity.toString() !== this.dataset.original) {
+                    updateCartItem(this.dataset.itemId, quantity, this);
+                }
             }
         });
     });
@@ -507,6 +673,7 @@ document.addEventListener('DOMContentLoaded', function() {
             notification.style.animation = 'slideOut 0.3s ease';
             setTimeout(() => notification.remove(), 300);
         }, 2000);
+        updateCartTotal();
     }
 
     // Add animations

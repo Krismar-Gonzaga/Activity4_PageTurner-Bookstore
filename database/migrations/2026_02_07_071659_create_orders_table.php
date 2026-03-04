@@ -21,6 +21,7 @@ return new class extends Migration
                 $table->text('billing_address');
                 $table->enum('payment_method', ['cash_on_delivery', 'credit_card', 'paypal']);
                 $table->enum('payment_status', ['pending', 'paid', 'failed', 'refunded'])->default('pending');
+                $table->string('phone')->nullable();
                 $table->string('tracking_number')->nullable();
                 $table->text('notes')->nullable();
                 $table->timestamps();

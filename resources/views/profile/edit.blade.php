@@ -72,7 +72,7 @@
                     <!-- Submit Button -->
                     <div class="flex justify-end">
                         <button type="submit" 
-                                class="px-6 py-2 bg-[var(--pageturner-primary)] text-black rounded-lg hover:bg-[var(--pageturner-secondary)] transition-colors font-medium">
+                                class="px-6 py-2 bg-[var(--pageturner-primary)] text-white rounded-lg hover:bg-[var(--pageturner-secondary)] transition-colors font-medium">
                             Upload Picture
                         </button>
                     </div>

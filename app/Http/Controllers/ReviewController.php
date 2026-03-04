@@ -10,6 +10,12 @@ class ReviewController extends Controller
 {
     public function store(Request $request, Book $book)
     {
+        // Check if user is verified
+        if (!$request->user()->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice')
+                ->with('error', 'You must verify your email before writing reviews.');
+        }
+
         $validated = $request->validate([
             'rating' => 'required|integer|min:1|max:5',
             'comment' => 'nullable|string|max:1000',

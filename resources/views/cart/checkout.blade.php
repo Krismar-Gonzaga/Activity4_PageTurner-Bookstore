@@ -423,15 +423,7 @@
                             </div>
                         </div>
 
-                        <!-- Order Notes -->
-                        <div class="form-group">
-                            <label for="notes" class="form-label">Order Notes (Optional)</label>
-                            <textarea id="notes" 
-                                    name="notes" 
-                                    rows="3" 
-                                    class="form-input" 
-                                    placeholder="Any special instructions?"></textarea>
-                        </div>
+                        
 
                         <button type="submit" class="place-order-btn">
                             Place Order - ${{ number_format($total, 2) }}

@@ -12,30 +12,37 @@ class User extends Authenticatable{
         'role',
         'profile_picture',
     ];
+    
     protected $hidden = [
         'password',
         'remember_token',
     ];
+
     protected function casts(): array{
         return [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
         ];
     }
-// Relationships
+
+    // Relationships
     public function orders()
     {
         return $this->hasMany(Order::class);
     }
+
     public function reviews()
     {
         return $this->hasMany(Review::class);
     }
 
-
-
     // Helper method
     public function isAdmin(){
         return $this->role === 'admin';
+    }
+    
+    // Helper method to check if email is verified
+    public function hasVerifiedEmail(){
+        return !is_null($this->email_verified_at);
     }
 }

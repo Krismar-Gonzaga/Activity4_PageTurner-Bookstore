@@ -331,7 +331,7 @@
                 <!-- Form Actions -->
                 <div class="flex justify-between items-center pt-6 border-t border-[#F4A460]/20">
                     
-                    <div class="flex space-x-3" style="margin-left: 800px;">
+                    <div class="flex space-x-3" style="margin-left: 600px;">
                         <a href="{{ route('books.show', $book) }}" 
                            class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors">
                             Cancel

@@ -464,6 +464,14 @@
             }
         }
     </style>
+    @auth
+        @if(!auth()->user()->hasVerifiedEmail())
+            <div class="alert alert-warning">
+                Please verify your email address. 
+                <a href="{{ route('verification.notice') }}">Resend verification email</a>
+            </div>
+        @endif
+    @endauth
 
     <div class="home-page-wrapper">
         <div class="home-inner">

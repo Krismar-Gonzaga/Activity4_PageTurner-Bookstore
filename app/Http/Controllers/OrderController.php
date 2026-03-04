@@ -46,10 +46,17 @@ class OrderController extends Controller
      */
     public function store(Request $request)
     {
+        // Check if user is verified
+        if (!$request->user()->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice')
+                ->with('error', 'You must verify your email before placing an order.');
+        }
+
         // This would typically be called from cart checkout
         $request->validate([
             'shipping_address' => 'required|string|max:500',
             'billing_address' => 'required|string|max:500',
+            'phone' => 'required|string|max:500',
             'payment_method' => 'required|in:cash_on_delivery,credit_card,paypal',
         ]);
         
@@ -79,6 +86,7 @@ class OrderController extends Controller
             'shipping_address' => $request->shipping_address,
             'billing_address' => $request->billing_address,
             'payment_method' => $request->payment_method,
+            'phone' => $request->phone,
             'payment_status' => 'pending',
         ]);
         

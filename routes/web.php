@@ -7,7 +7,26 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\Admin\DashboardController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+
+// Email Verification Routes
+Route::get('/email/verify', function () {
+    return view('auth.verify-email');
+})->middleware('auth')->name('verification.notice');
+
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+    return redirect('/')->with('success', 'Email verified successfully!'); // or wherever you want after verification
+})->middleware(['auth', 'signed'])->name('verification.verify');
+
+Route::post('/email/verification-notification', function (Request $request) {
+    $request->user()->sendEmailVerificationNotification();
+    return back()->with('resent', true);
+})->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+
+
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
 // Book browsing (public)
@@ -17,6 +36,7 @@ Route::get('/books/{book}', [BookController::class, 'show'])->name('books.show')
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{category}', [CategoryController::class,
 'show'])->name('categories.show');
+
 
 Route::post('/cart/add/{book}', [CartController::class, 'add'])->name('cart.add');
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
@@ -46,16 +66,19 @@ Route::middleware('auth')->group(function () {
     Route::put('/profile/picture', [ProfileController::class, 'updatePicture'])->name('profile.picture.update');
     Route::delete('/profile/picture', [ProfileController::class, 'removePicture'])->name('profile.picture.remove');
 
+    
+});
+
+Route::middleware(['auth', 'verified'])->group(function () {
+    // Order routes
     // Review routes
     Route::post('/books/{book}/reviews', [ReviewController::class,'store'])->name('reviews.store');
     Route::delete('/reviews/{review}', [ReviewController::class,'destroy'])->name('reviews.destroy');
     // Order routes
-
-
-
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+
 });
 // Admin-only routes (Category & Book management)
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
@@ -96,6 +119,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('orders.status');
     Route::post('/orders/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('orders.payment-status');
 });
+
+
+
 
 
 require __DIR__.'/auth.php';
