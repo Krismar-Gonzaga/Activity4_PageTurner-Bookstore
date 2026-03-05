@@ -450,23 +450,57 @@
             <p>Enter your email and choose a new secure password to regain access to your PageTurner account.</p>
         </div>
 
-        <form method="POST" action="{{ route('password.store') }}" class="reset-password-form">
+        <!-- Session Status -->
+        @if (session('status'))
+            <div class="reset-info-message">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        <!-- Validation Errors -->
+        @if ($errors->any())
+            <div class="reset-input-error mb-4">
+                @foreach ($errors->all() as $error)
+                    <p>{{ $error }}</p>
+                @endforeach
+            </div>
+        @endif
+
+        <!-- FIXED: Changed action from 'password.store' to 'password.update' (Laravel default) -->
+        <form method="POST" action="{{ route('password.update') }}" class="reset-password-form">
             @csrf
 
-            <!-- Password Reset Token -->
-            <input type="hidden" name="token" value="{{ $request->route('token') }}">
+            <!-- Password Reset Token - FIXED: Use $token variable passed from controller -->
+            <input type="hidden" name="token" value="{{ $token }}">
 
-            <!-- Email Address -->
+            <!-- Email Address - FIXED: Use $email variable passed from controller -->
             <div class="reset-form-group">
-                <x-input-label for="email" :value="__('Email Address')" class="reset-input-label" />
-                <x-text-input id="email" class="reset-text-input block mt-1 w-full" type="email" name="email" :value="old('email', $request->email)" required autofocus autocomplete="username" />
-                <x-input-error :messages="$errors->get('email')" class="reset-input-error mt-2" />
+                <label for="email" class="reset-input-label">{{ __('Email Address') }}</label>
+                <input id="email" 
+                       class="reset-text-input" 
+                       type="email" 
+                       name="email" 
+                       value="{{ $email ?? old('email') }}" 
+                       required 
+                       autofocus 
+                       autocomplete="username" 
+                       placeholder="Enter your email address" />
+                
+                @error('email')
+                    <div class="reset-input-error">{{ $message }}</div>
+                @enderror
             </div>
 
             <!-- Password -->
             <div class="reset-form-group">
-                <x-input-label for="password" :value="__('New Password')" class="reset-input-label" />
-                <x-text-input id="password" class="reset-text-input block mt-1 w-full" type="password" name="password" required autocomplete="new-password" />
+                <label for="password" class="reset-input-label">{{ __('New Password') }}</label>
+                <input id="password" 
+                       class="reset-text-input" 
+                       type="password" 
+                       name="password" 
+                       required 
+                       autocomplete="new-password" 
+                       placeholder="Enter new password" />
                 
                 <!-- Password strength indicator -->
                 <div class="reset-password-strength">
@@ -474,16 +508,25 @@
                 </div>
                 <div class="reset-password-strength-text" id="reset-password-strength-text">Password strength</div>
                 
-                <x-input-error :messages="$errors->get('password')" class="reset-input-error mt-2" />
+                @error('password')
+                    <div class="reset-input-error">{{ $message }}</div>
+                @enderror
             </div>
 
             <!-- Confirm Password -->
             <div class="reset-form-group">
-                <x-input-label for="password_confirmation" :value="__('Confirm New Password')" class="reset-input-label" />
-                <x-text-input id="password_confirmation" class="reset-text-input block mt-1 w-full"
-                                type="password"
-                                name="password_confirmation" required autocomplete="new-password" />
-                <x-input-error :messages="$errors->get('password_confirmation')" class="reset-input-error mt-2" />
+                <label for="password_confirmation" class="reset-input-label">{{ __('Confirm New Password') }}</label>
+                <input id="password_confirmation" 
+                       class="reset-text-input" 
+                       type="password" 
+                       name="password_confirmation" 
+                       required 
+                       autocomplete="new-password" 
+                       placeholder="Confirm new password" />
+                
+                @error('password_confirmation')
+                    <div class="reset-input-error">{{ $message }}</div>
+                @enderror
             </div>
 
             <!-- Password Instructions -->
@@ -502,15 +545,15 @@
                     {{ __('Back to Login') }}
                 </a>
 
-                <x-primary-button class="reset-primary-button">
+                <button type="submit" class="reset-primary-button">
                     {{ __('Reset Password') }}
-                </x-primary-button>
+                </button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Optional JavaScript for password strength indicator -->
+<!-- JavaScript for password strength indicator -->
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const passwordInput = document.getElementById('password');
@@ -535,12 +578,15 @@
                     strengthText.textContent = 'Password strength';
                 } else if (strength <= 2) {
                     strengthBar.classList.add('reset-password-strength-weak');
+                    strengthBar.style.width = '33%';
                     strengthText.textContent = 'Weak password - add more characters and symbols';
                 } else if (strength === 3) {
                     strengthBar.classList.add('reset-password-strength-medium');
+                    strengthBar.style.width = '66%';
                     strengthText.textContent = 'Medium password - almost there!';
                 } else {
                     strengthBar.classList.add('reset-password-strength-strong');
+                    strengthBar.style.width = '100%';
                     strengthText.textContent = 'Strong password - excellent!';
                 }
             });

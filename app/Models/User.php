@@ -40,6 +40,17 @@ class User extends Authenticatable{
     public function isAdmin(){
         return $this->role === 'admin';
     }
+
+    // Check if user has purchased a specific book
+    public function hasPurchasedBook($bookId)
+    {
+        return $this->orders()
+            ->whereHas('items', function($query) use ($bookId) {
+                $query->where('book_id', $bookId);
+            })
+            ->where('status', 'delivered') // or 'delivered' depending on your order status
+            ->exists();
+    }
     
     // Helper method to check if email is verified
     public function hasVerifiedEmail(){

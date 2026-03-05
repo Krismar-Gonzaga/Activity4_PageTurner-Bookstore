@@ -1557,56 +1557,65 @@
     
     <!-- Review Form (for authenticated users) -->
     @auth
-        <div class="review-form">
-            <h3 class="review-form-title">Share Your Thoughts</h3>
-            <form action="{{ route('reviews.store', $book) }}" method="POST">
-                @csrf
-                
-                <!-- Rating -->
-                <div class="rating-input">
-                    <label class="rating-label">Your Rating</label>
-                    <div class="stars-input" id="rating-stars">
-                        @for($i = 5; $i >= 1; $i--)
-                            <input type="radio" 
-                                   id="star-{{ $i }}" 
-                                   name="rating" 
-                                   value="{{ $i }}" 
-                                   class="star-input-hidden"
-                                   {{ old('rating') == $i ? 'checked' : '' }}>
-                            <label for="star-{{ $i }}" class="star-label">
-                                <svg class="star-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                          d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
-                                </svg>
-                            </label>
-                        @endfor
-                    </div>
-                    @error('rating')
-                        <p class="error-message">{{ $message }}</p>
-                    @enderror
+        @php
+            $hasPurchased = auth()->user()->hasPurchasedBook($book->id);
+            $hasReviewed = $book->reviews->contains('user_id', auth()->id());
+        @endphp
+        
+        @if($hasPurchased)
+            @if(!$hasReviewed)
+                <div class="review-form">
+                    <h3 class="review-form-title">Share Your Thoughts</h3>
+                    <form action="{{ route('reviews.store', $book) }}" method="POST">
+                        @csrf
+                        
+                        <!-- Rating -->
+                        <div class="rating-input">
+                            <label class="rating-label">Your Rating</label>
+                            <div class="stars-input" id="rating-stars">
+                                @for($i = 5; $i >= 1; $i--)
+                                    <input type="radio" 
+                                        id="star-{{ $i }}" 
+                                        name="rating" 
+                                        value="{{ $i }}" 
+                                        class="star-input-hidden"
+                                        {{ old('rating') == $i ? 'checked' : '' }}>
+                                    <label for="star-{{ $i }}" class="star-label">
+                                        <svg class="star-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                                        </svg>
+                                    </label>
+                                @endfor
+                            </div>
+                            @error('rating')
+                                <p class="error-message">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        
+                        <!-- Comment -->
+                        <div class="comment-input">
+                            <label for="comment" class="comment-label">Your Review</label>
+                            <textarea id="comment" 
+                                    name="comment" 
+                                    rows="5"
+                                    class="comment-textarea" 
+                                    placeholder="Share your experience with this book...">{{ old('comment') }}</textarea>
+                            @error('comment')
+                                <p class="error-message">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        
+                        <!-- Submit -->
+                        <div class="submit-review-btn">
+                            <button type="submit" class="submit-btn">
+                                Submit Review
+                            </button>
+                        </div>
+                    </form>
                 </div>
-                
-                <!-- Comment -->
-                <div class="comment-input">
-                    <label for="comment" class="comment-label">Your Review</label>
-                    <textarea id="comment" 
-                              name="comment" 
-                              rows="5"
-                              class="comment-textarea" 
-                              placeholder="Share your experience with this book...">{{ old('comment') }}</textarea>
-                    @error('comment')
-                        <p class="error-message">{{ $message }}</p>
-                    @enderror
-                </div>
-                
-                <!-- Submit -->
-                <div class="submit-review-btn">
-                    <button type="submit" class="submit-btn">
-                        Submit Review
-                    </button>
-                </div>
-            </form>
-        </div>
+            @endif
+        @endif
     @else
         <div class="login-prompt">
             <div class="prompt-content">
