@@ -8,6 +8,7 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\Admin\DashboardController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 
@@ -129,7 +130,39 @@ Route::middleware('auth')->group(function () {
     Route::post('/orders/{order}/payment-status', [OrderController::class, 'updatePaymentStatus'])->name('orders.payment-status');
 });
 
+// Two-Factor Authentication Routes
+Route::middleware(['auth'])->group(function () {
+    // Profile 2FA settings
+    Route::get('/profile/two-factor', [App\Http\Controllers\TwoFactorController::class, 'index'])
+        ->name('profile.two-factor');
+    
+    Route::post('/profile/two-factor/setup', [App\Http\Controllers\TwoFactorController::class, 'setup'])
+        ->name('profile.two-factor.setup');
+    
+    Route::post('/profile/two-factor/verify-setup', [App\Http\Controllers\TwoFactorController::class, 'verifySetup'])
+        ->name('profile.two-factor.verify-setup');
+    
+    Route::post('/profile/two-factor/disable', [App\Http\Controllers\TwoFactorController::class, 'disable'])
+        ->name('profile.two-factor.disable');
+    
+    Route::get('/profile/two-factor/recovery-codes', [App\Http\Controllers\TwoFactorController::class, 'showRecoveryCodes'])
+        ->name('profile.two-factor.recovery-codes');
+    
+    Route::post('/profile/two-factor/recovery-codes/regenerate', [App\Http\Controllers\TwoFactorController::class, 'regenerateRecoveryCodes'])
+        ->name('profile.two-factor.recovery-codes.regenerate');
+});
 
+// 2FA Verification Routes (for login)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/two-factor/verify', [App\Http\Controllers\TwoFactorVerifyController::class, 'showVerifyForm'])
+        ->name('two-factor.verify');
+    
+    Route::post('/two-factor/verify', [App\Http\Controllers\TwoFactorVerifyController::class, 'verify'])
+        ->name('two-factor.verify.submit');
+    
+    Route::post('/two-factor/resend', [App\Http\Controllers\TwoFactorVerifyController::class, 'resend'])
+        ->name('two-factor.resend');
+});
 
 
 

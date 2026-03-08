@@ -165,7 +165,7 @@
 
     <!-- Main Content -->
     <main class="flex-grow pt-10 pb-16 md:pt-12 md:pb-20 lg:pt-14 lg:pb-24">
-        @if(Request::is('/'))
+        @if(\Illuminate\Support\Facades\Request::is('/'))
             <!-- Homepage – full width -->
             @yield('content')
         @else

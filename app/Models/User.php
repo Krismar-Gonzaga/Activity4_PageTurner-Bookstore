@@ -11,6 +11,8 @@ class User extends Authenticatable{
         'password',
         'role',
         'profile_picture',
+        'two_factor_enabled',
+        'two_factor_type',
     ];
     
     protected $hidden = [
@@ -55,5 +57,10 @@ class User extends Authenticatable{
     // Helper method to check if email is verified
     public function hasVerifiedEmail(){
         return !is_null($this->email_verified_at);
+    }
+
+    public function twoFactorAuthentication(){
+        return $this->hasOne(TwoFactorAuthentication::class);
+
     }
 }

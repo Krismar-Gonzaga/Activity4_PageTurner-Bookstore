@@ -20,6 +20,8 @@ return new class extends Migration
             $table->string('profile_picture')->nullable();
             $table->enum('role', ['admin', 'customer'])->default('customer');
             $table->rememberToken();
+            $table->boolean('two_factor_enabled')->default(false);
+            $table->string('two_factor_type')->nullable();
             $table->timestamps();
         });
     }
@@ -29,6 +31,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        //
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn(['two_factor_enabled', 'two_factor_type']);
+        });
     }
 };

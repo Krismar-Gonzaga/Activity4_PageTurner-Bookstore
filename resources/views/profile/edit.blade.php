@@ -106,6 +106,37 @@
         </div>
     </div>
 
+    
+    <div class="rounded-xl p-6 sm:p-8 bg-[var(--pageturner-very-light)] shadow-sm border border-[rgba(139,69,19,0.12)] relative overflow-hidden">
+        <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-[var(--pageturner-dark)] via-[var(--pageturner-primary)] to-[var(--pageturner-secondary)]"></div>
+        <div class="mb-6">
+            <h2 class="text-2xl font-bold text-[var(--pageturner-dark)] page-turner-font mb-2">Two-Factor Authentication</h2>
+            <p class="text-gray-700">Add extra security to your account.</p>
+        </div>
+        <div class="flex items-center justify-between">
+            <div>
+                @if(auth()->user()->two_factor_enabled)
+                    <span class="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">
+                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        Enabled ({{ ucfirst(auth()->user()->two_factor_type) }})
+                    </span>
+                @else
+                    <span class="inline-flex items-center px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        </svg>
+                        Disabled
+                    </span>
+                @endif
+            </div>
+            <a href="{{ route('profile.two-factor') }}" class="px-4 py-2 bg-[var(--pageturner-primary)] text-white rounded-lg hover:bg-[var(--pageturner-secondary)] transition-colors text-sm">
+                Configure 2FA
+            </a>
+        </div>
+    </div>
+
     <!-- Update Password -->
     <div class="rounded-xl p-6 sm:p-8 bg-[var(--pageturner-very-light)] shadow-sm border border-[rgba(139,69,19,0.12)] relative overflow-hidden">
         <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-[var(--pageturner-dark)] via-[var(--pageturner-primary)] to-[var(--pageturner-secondary)]"></div>
