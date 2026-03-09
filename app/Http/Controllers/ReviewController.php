@@ -35,6 +35,10 @@ class ReviewController extends Controller
         } else {
             Review::create($validated);
             $message = 'Review submitted successfully!';
+            $admins = User::where('is_admin', true)->get();
+            foreach ($admins as $admin) {
+                $admin->notify(new NewReviewNotification($review, $book, auth()->user()));
+            }
         }
         
         return redirect()->route('books.show', $book)

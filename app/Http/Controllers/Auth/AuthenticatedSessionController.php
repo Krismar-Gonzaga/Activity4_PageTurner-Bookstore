@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
+use App\Notifications\NewDeviceLoginNotification;
+
 class AuthenticatedSessionController extends Controller
 {
     /**
@@ -27,6 +29,19 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         $request->session()->regenerate();
+
+        $user = Auth::user();
+        
+        // After successful login
+        if (Auth::user()->two_factor_enabled) {
+            // Check if this is a new device
+            $ip = $request->ip();
+            $userAgent = $request->userAgent();
+            
+            // You might want to store known devices in a table
+            // For now, send notification for every login
+            $user->notify(new NewDeviceLoginNotification($ip, $userAgent));
+        }
 
         return redirect()->intended(route('home', absolute: false));
     }

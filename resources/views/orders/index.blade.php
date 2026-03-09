@@ -6,7 +6,7 @@
     <div class="flex justify-between items-center">
         <div>
             <h1 class="text-3xl font-bold page-turner-font text-white">
-                @if(Auth::user()->isAdmin())
+                @if(auth()->user()->isAdmin())
                     All Orders
                 @else
                     My Orders
@@ -25,7 +25,7 @@
                     <thead class="bg-[#F5EBDC]">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-[#5D4037] uppercase tracking-wider">Order #</th>
-                            @if(Auth::user()->isAdmin())
+                            @if(auth()->user()->isAdmin())
                                 <th class="px-6 py-3 text-left text-xs font-medium text-[#5D4037] uppercase tracking-wider">Customer</th>
                             @endif
                             <th class="px-6 py-3 text-left text-xs font-medium text-[#5D4037] uppercase tracking-wider">Items</th>
@@ -44,7 +44,7 @@
                                     <div class="text-sm text-gray-500">ID: {{ $order->id }}</div>
                                 </td>
                                 
-                                @if(Auth::user()->isAdmin())
+                                @if(auth()->user()->isAdmin())
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="text-sm font-medium text-gray-900">{{ $order->user->name ?? 'N/A' }}</div>
                                         <div class="text-sm text-gray-500">{{ $order->user->email ?? '' }}</div>
@@ -94,7 +94,7 @@
                                         View
                                     </a>
                                     
-                                    @if(Auth::user()->isAdmin())
+                                    @if(auth()->user()->isAdmin())
                                         <a href="{{ route('orders.edit', $order->id) }}" 
                                            class="text-[#F4A460] hover:text-[#D2691E]">
                                             Edit

@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Mail;
 use App\Models\TwoFactorAuthentication;
 use App\Mail\TwoFactorOTP;
 use Illuminate\Support\Str;
+use App\Notifications\TwoFactorEnabledNotification;
+use App\Notifications\TwoFactorDisabledNotification;
 
 class TwoFactorController extends Controller
 {
@@ -150,6 +152,8 @@ class TwoFactorController extends Controller
                 'two_factor_type' => 'email'
             ]);
 
+            $user->notify(new TwoFactorEnabledNotification($type));
+
             session()->forget('2fa_setup');
 
             return view('profile.two-factor-recovery-codes', compact('recoveryCodes'));
@@ -174,6 +178,8 @@ class TwoFactorController extends Controller
             'two_factor_enabled' => false,
             'two_factor_type' => null
         ]);
+
+        $user->notify(new TwoFactorDisabledNotification());
 
         return redirect()->route('profile.two-factor')->with('success', 'Two-factor authentication disabled successfully.');
     }

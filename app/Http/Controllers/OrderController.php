@@ -5,8 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Book;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\OrderPlacedNotification;
+use App\Notifications\NewOrderAdminNotification;
+use App\Notifications\OrderStatusChangedNotification;
 
 class OrderController extends Controller
 {
@@ -59,6 +63,8 @@ class OrderController extends Controller
             'phone' => 'required|string|max:500',
             'payment_method' => 'required|in:cash_on_delivery,credit_card,paypal',
         ]);
+
+        $user = Auth::user();
         
         // Get cart items from session (you'll need to implement cart logic)
         $cartItems = session()->get('cart', []);
@@ -102,7 +108,13 @@ class OrderController extends Controller
                     'price' => $book->price,
                     'subtotal' => $book->price * $item['quantity'],
                 ]);
+
+                $user->notify(new OrderPlacedNotification($order));
                 
+                $admins = User::where('role', 'admin')->get();
+                foreach ($admins as $admin) {
+                    $admin->notify(new NewOrderAdminNotification($order, $user));
+                }
                 // Update book stock
                 $book->decrement('stock_quantity', $item['quantity']);
             }
@@ -183,6 +195,13 @@ class OrderController extends Controller
         }
         
         $order->update($validated);
+
+        $oldStatus = $order->status;
+        $order->status = 'shipped';
+        $order->save();
+
+        // Notify customer
+        $order->user->notify(new OrderStatusChangedNotification($order, $oldStatus, $order->status));
         
         return redirect()->route('orders.show', $order)
             ->with('success', 'Order updated successfully!');

@@ -164,6 +164,23 @@ Route::middleware(['auth'])->group(function () {
         ->name('two-factor.resend');
 });
 
+// Notification Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/notifications', [App\Http\Controllers\NotificationController::class, 'index'])
+        ->name('notifications.index');
+    
+    Route::get('/notifications/fetch', [App\Http\Controllers\NotificationController::class, 'getNotifications'])
+        ->name('notifications.fetch');
+    
+    Route::post('/notifications/{id}/mark-as-read', [App\Http\Controllers\NotificationController::class, 'markAsRead'])
+        ->name('notifications.mark-as-read');
+    
+    Route::post('/notifications/mark-all-as-read', [App\Http\Controllers\NotificationController::class, 'markAllAsRead'])
+        ->name('notifications.mark-all-as-read');
+    
+    Route::delete('/notifications/{id}', [App\Http\Controllers\NotificationController::class, 'destroy'])
+        ->name('notifications.destroy');
+});
 
 
 require __DIR__.'/auth.php';
