@@ -59,6 +59,7 @@ class NewDeviceLoginNotification extends Notification implements ShouldQueue
             'title' => 'New Device Login Detected',
             'message' => 'A new login was detected from IP: ' . $this->ip,
             'type' => 'security',
+            'action_url' => route('profile.edit'),
             'time' => $this->timestamp->toDateTimeString(),
         ];
     }

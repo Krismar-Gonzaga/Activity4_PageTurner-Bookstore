@@ -54,6 +54,7 @@ class TwoFactorEnabledNotification extends Notification  implements ShouldQueue
             'title' => 'Two-Factor Authentication Enabled',
             'message' => '2FA has been enabled on your account using ' . ($this->method === 'app' ? 'Authenticator App' : 'Email OTP'),
             'type' => 'security',
+            'action_url' => route('profile.two-factor.recovery-codes'),
             'time' => now()->toDateTimeString(),
         ];
     }

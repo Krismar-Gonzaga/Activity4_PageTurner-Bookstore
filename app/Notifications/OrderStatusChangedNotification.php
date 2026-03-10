@@ -64,6 +64,7 @@ class OrderStatusChangedNotification extends Notification implements ShouldQueue
             'order_number' => $this->order->order_number,
             'old_status' => $this->oldStatus,
             'new_status' => $this->newStatus,
+            'action_url' => route('orders.show', $this->order->id),
             'time' => now()->toDateTimeString(),
         ];
     }

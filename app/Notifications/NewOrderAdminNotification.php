@@ -29,7 +29,7 @@ class NewOrderAdminNotification extends Notification implements ShouldQueue
 
     public function toMail($notifiable)
     {
-        return (new MailMessage)
+        $mailMessage = (new MailMessage)
             ->subject('New Order Received #' . $this->order->order_number . ' - PageTurner')
             ->greeting('Hello Admin!')
             ->line('A new order has been placed on your store.')
@@ -42,13 +42,13 @@ class NewOrderAdminNotification extends Notification implements ShouldQueue
             ->line('- Payment Method: ' . ucfirst(str_replace('_', ' ', $this->order->payment_method)))
             ->line('')
             ->line('**Order Items:**');
-            
+
         foreach ($this->order->items as $item) {
             $mailMessage->line('- ' . $item->book->title . ' x' . $item->quantity . ' - $' . number_format($item->price * $item->quantity, 2));
         }
 
         return $mailMessage
-            ->action('View Order Details', route('admin.orders.show', $this->order->id))
+            ->action('View Order Details', route('orders.show', $this->order->id))
             ->salutation('PageTurner Store');
     }
 
@@ -62,6 +62,7 @@ class NewOrderAdminNotification extends Notification implements ShouldQueue
             'order_number' => $this->order->order_number,
             'customer_name' => $this->customer->name,
             'amount' => $this->order->total_amount,
+            'action_url' => route('orders.show', $this->order->id),
             'time' => now()->toDateTimeString(),
         ];
     }

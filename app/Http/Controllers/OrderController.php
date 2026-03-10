@@ -108,16 +108,18 @@ class OrderController extends Controller
                     'price' => $book->price,
                     'subtotal' => $book->price * $item['quantity'],
                 ]);
-
-                $user->notify(new OrderPlacedNotification($order));
-                
-                $admins = User::where('role', 'admin')->get();
-                foreach ($admins as $admin) {
-                    $admin->notify(new NewOrderAdminNotification($order, $user));
-                }
                 // Update book stock
                 $book->decrement('stock_quantity', $item['quantity']);
             }
+        }
+
+        // Notify customer (once per order)
+        $user->notify(new OrderPlacedNotification($order));
+
+        // Notify admins (once per order)
+        $admins = User::where('role', 'admin')->get();
+        foreach ($admins as $admin) {
+            $admin->notify(new NewOrderAdminNotification($order, $user));
         }
         
         // Clear cart
@@ -193,15 +195,14 @@ class OrderController extends Controller
                 $item->book->increment('stock_quantity', $item->quantity);
             }
         }
-        
-        $order->update($validated);
 
         $oldStatus = $order->status;
-        $order->status = 'shipped';
-        $order->save();
+        $order->update($validated);
 
-        // Notify customer
-        $order->user->notify(new OrderStatusChangedNotification($order, $oldStatus, $order->status));
+        // Notify customer when status changes
+        if ($oldStatus !== $order->status) {
+            $order->user->notify(new OrderStatusChangedNotification($order, $oldStatus, $order->status));
+        }
         
         return redirect()->route('orders.show', $order)
             ->with('success', 'Order updated successfully!');

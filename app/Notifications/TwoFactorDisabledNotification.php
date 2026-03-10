@@ -34,6 +34,7 @@ class TwoFactorDisabledNotification extends Notification implements ShouldQueue
             'title' => 'Two-Factor Authentication Disabled',
             'message' => '2FA has been disabled on your account',
             'type' => 'security',
+            'action_url' => route('profile.two-factor'),
             'time' => now()->toDateTimeString(),
         ];
     }

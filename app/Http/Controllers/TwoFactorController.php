@@ -115,6 +115,8 @@ class TwoFactorController extends Controller
                 'two_factor_type' => 'app'
             ]);
 
+            $user->notify(new TwoFactorEnabledNotification('app'));
+
             session()->forget('2fa_setup');
 
             return view('profile.two-factor-recovery-codes', compact('recoveryCodes'));
@@ -152,7 +154,7 @@ class TwoFactorController extends Controller
                 'two_factor_type' => 'email'
             ]);
 
-            $user->notify(new TwoFactorEnabledNotification($type));
+            $user->notify(new TwoFactorEnabledNotification($setup['type']));
 
             session()->forget('2fa_setup');
 

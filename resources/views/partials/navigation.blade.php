@@ -521,7 +521,7 @@
             },
             
             fetchNotifications() {
-                fetch('/notifications')
+                    fetch('/notifications/fetch')
                     .then(response => response.json())
                     .then(data => {
                         this.notifications = data.notifications;

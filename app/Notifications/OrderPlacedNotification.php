@@ -51,6 +51,7 @@ class OrderPlacedNotification extends Notification implements ShouldQueue
             'order_id' => $this->order->id,
             'order_number' => $this->order->order_number,
             'amount' => $this->order->total_amount,
+            'action_url' => route('orders.show', $this->order->id),
             'time' => now()->toDateTimeString(),
         ];
     }

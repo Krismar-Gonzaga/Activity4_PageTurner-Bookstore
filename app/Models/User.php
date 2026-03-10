@@ -3,6 +3,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Notifications\PasswordResetNotification;
+
 class User extends Authenticatable{
     use HasFactory, Notifiable;
     protected $fillable = [
@@ -40,16 +42,26 @@ class User extends Authenticatable{
 
     
 
+    /**
+    * Get the notifications for the user.
+    */
     public function notifications()
     {
-        return $this->morphMany(Notification::class, 'notifiable')->orderBy('created_at', 'desc');
+        return $this->morphMany(\Illuminate\Notifications\DatabaseNotification::class, 'notifiable')
+                    ->orderBy('created_at', 'desc');
     }
 
+    /**
+     * Get the read notifications for the user.
+     */
     public function readNotifications()
     {
         return $this->notifications()->whereNotNull('read_at');
     }
 
+    /**
+     * Get the unread notifications for the user.
+     */
     public function unreadNotifications()
     {
         return $this->notifications()->whereNull('read_at');
