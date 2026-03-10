@@ -7,6 +7,7 @@ use App\Models\Book;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Category;
+use App\Models\Review;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
@@ -19,6 +20,10 @@ class DashboardController extends Controller
             'total_users' => User::count(),
             'total_categories' => Category::count(),
             'recent_orders' => Order::with('user')
+                                ->latest()
+                                ->take(5)
+                                ->get(),
+            'recent_reviews' => Review::with('user', 'book')
                                 ->latest()
                                 ->take(5)
                                 ->get(),

@@ -67,5 +67,55 @@
             </div>
         </div>
     </div>
+
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+        <!-- Recent Reviews -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h2 class="text-xl font-bold mb-4">Recent Reviews</h2>
+            <div class="space-y-4">
+                @forelse($stats['recent_reviews'] as $review)
+                    <div class="border-b pb-3">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-medium">{{ $review->user->name }}</p>
+                                <p class="text-sm text-gray-600">on "{{ $review->book->title }}"</p>
+                            </div>
+                            <div class="flex items-center">
+                                <!-- Star rating display -->
+                                <div class="flex text-yellow-400 mr-2">
+                                    @for($i = 1; $i <= 5; $i++)
+                                        @if($i <= $review->rating)
+                                            <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20">
+                                                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+                                            </svg>
+                                        @else
+                                            <svg class="w-4 h-4 fill-current text-gray-300" viewBox="0 0 20 20">
+                                                <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/>
+                                            </svg>
+                                        @endif
+                                    @endfor
+                                </div>
+                                <span class="text-sm text-gray-500">
+                                    {{ $review->created_at->diffForHumans() }}
+                                </span>
+                            </div>
+                        </div>
+                        @if($review->comment)
+                            <p class="text-sm text-gray-700 mt-2 italic">
+                                {{ \Illuminate\Support\Str::limit($review->comment, 100) }}
+                            </p>
+                        @endif
+                    </div>
+                @empty
+                    <p class="text-gray-500 text-center py-4">No reviews yet</p>
+                @endforelse
+            </div>
+            
+            
+        </div>
+        
+        
+    </div>
 </div>
 @endsection

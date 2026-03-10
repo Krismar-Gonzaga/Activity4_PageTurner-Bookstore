@@ -69,7 +69,7 @@
                 </a>
 
                 <!-- Navigation Links (Desktop) -->
-                <div class="hidden sm:flex ml-8 space-x-1 text-sm font-medium" style="margin-left: 200px;">
+                <div class="hidden sm:flex ml-8 space-x-1 text-sm font-medium" style="margin-left: 100px;">
                     <a href="{{ route('home') }}" 
                        class="px-3 py-2 rounded-full transition duration-200 hover:bg-white/10 text-white {{ request()->routeIs('home') ? 'bg-white/15' : '' }}">
                         Home
