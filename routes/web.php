@@ -7,6 +7,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\InventoryController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -60,11 +61,17 @@ Route::resource('categories', CategoryController::class);
 
 // Admin categories routes
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+    
+    // Inventory Management
+    Route::get('/inventory', [InventoryController::class, 'index'])->name('admin.inventory.index');
+
     Route::get('/categories/create', [CategoryController::class, 'create'])->name('admin.categories.create');
     Route::post('/categories', [CategoryController::class, 'store'])->name('admin.categories.store');
     Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('admin.categories.edit');
     Route::put('/categories/{category}', [CategoryController::class, 'update'])->name('admin.categories.update');
     Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('admin.categories.destroy');
+
+    
 });
 
 // Authenticated routes

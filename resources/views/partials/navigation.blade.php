@@ -94,14 +94,9 @@
 
                     @auth
                         @if(auth()->user()->isAdmin())
-                            <a href="{{ route('admin.books.create') }}" 
-                               class="px-3 py-2 rounded-full transition duration-200 hover:bg-white/10 text-white {{ request()->routeIs('admin.books.*') ? 'bg-white/15' : '' }}">
-                                Add Book
-                            </a>
-
-                            <a href="{{ route('admin.categories.create') }}" 
-                               class="px-3 py-2 rounded-full transition duration-200 hover:bg-white/10 text-white {{ request()->routeIs('admin.categories.*') ? 'bg-white/15' : '' }}">
-                                Add Category
+                            <a href="{{ route('admin.inventory.index') }}" 
+                            class="px-3 py-2 rounded-full transition duration-200 hover:bg-white/10 text-white ">
+                                Inventory
                             </a>
                         @endif
                     @endauth

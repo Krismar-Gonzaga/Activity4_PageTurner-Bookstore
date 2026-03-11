@@ -78,7 +78,7 @@
                 <div class="flex justify-between items-center pt-6 border-t border-gray-200">
                     
                     
-                    <div class="flex space-x-3" style="margin-left: 800px">
+                    <div class="flex space-x-3" style="margin-left: 250px">
                         <a href="{{ route('categories.index') }}" 
                            class="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors">
                             Cancel
