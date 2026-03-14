@@ -33,4 +33,10 @@ class TwoFactorOTP extends Mailable
             view: 'emails.two-factor-otp',
         );
     }
+
+    public function build()
+    {
+        return $this->markdown('emails.two-factor-otp')
+                    ->subject('Your Two-Factor Authentication Code - PageTurner Bookstore');
+    }
 }

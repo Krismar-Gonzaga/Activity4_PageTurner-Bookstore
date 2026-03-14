@@ -473,7 +473,7 @@
         
         <!-- Price -->
         <p class="book-price">
-            ${{ number_format($book->price, 2) }}
+            ₱{{ number_format($book->price, 2) }}
         </p>
         
         <!-- Stock Information  -->

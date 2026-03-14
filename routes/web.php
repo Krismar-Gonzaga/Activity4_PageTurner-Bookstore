@@ -6,6 +6,9 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\TwoFactorController;
+use App\Http\Controllers\TwoFactorVerifyController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InventoryController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -15,6 +18,19 @@ use Illuminate\Http\Request;
 
 // // This will include all auth routes including password reset
 Auth::routes();
+
+// Login routes with AJAX support
+Route::post('/login/ajax', [LoginController::class, 'ajaxLogin'])->name('login.ajax');
+
+// 2FA routes
+Route::middleware('guest')->group(function () {
+    Route::post('/two-factor/verify', [TwoFactorController::class, 'verify'])->name('two-factor.verify');
+    Route::post('/two-factor/recover', [TwoFactorController::class, 'recover'])->name('two-factor.recover');
+    Route::post('/two-factor/send-email', [TwoFactorController::class, 'sendEmailOTP'])->name('two-factor.send-email');
+
+    Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
+    Route::post('/login', [AuthenticatedSessionController::class, 'store']);
+});
 
 // Or if you want only password reset routes:
 Route::get('forgot-password', [App\Http\Controllers\Auth\ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
@@ -160,15 +176,10 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // 2FA Verification Routes (for login)
-Route::middleware(['auth'])->group(function () {
-    Route::get('/two-factor/verify', [App\Http\Controllers\TwoFactorVerifyController::class, 'showVerifyForm'])
-        ->name('two-factor.verify');
-    
-    Route::post('/two-factor/verify', [App\Http\Controllers\TwoFactorVerifyController::class, 'verify'])
-        ->name('two-factor.verify.submit');
-    
-    Route::post('/two-factor/resend', [App\Http\Controllers\TwoFactorVerifyController::class, 'resend'])
-        ->name('two-factor.resend');
+Route::middleware('two-factor.partial')->group(function () {
+    Route::get('/two-factor/verify', [TwoFactorVerifyController::class, 'showVerifyForm'])->name('two-factor.verify');
+    Route::post('/two-factor/verify', [TwoFactorVerifyController::class, 'verify'])->name('two-factor.verify.submit');
+    Route::post('/two-factor/resend', [TwoFactorVerifyController::class, 'resend'])->name('two-factor.resend');
 });
 
 // Notification Routes

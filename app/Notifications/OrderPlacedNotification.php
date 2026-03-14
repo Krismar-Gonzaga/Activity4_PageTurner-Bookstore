@@ -33,7 +33,7 @@ class OrderPlacedNotification extends Notification implements ShouldQueue
             ->line('**Order Details:**')
             ->line('- Order Number: #' . $this->order->order_number)
             ->line('- Order Date: ' . $this->order->created_at->format('F j, Y, g:i a'))
-            ->line('- Total Amount: $' . number_format($this->order->total_amount, 2))
+            ->line('- Total Amount: ₱' . number_format($this->order->total_amount, 2))
             ->line('- Payment Method: ' . ucfirst(str_replace('_', ' ', $this->order->payment_method)))
             ->line('- Order Status: ' . ucfirst($this->order->status))
             ->line('You will receive updates when your order status changes.')
@@ -46,7 +46,7 @@ class OrderPlacedNotification extends Notification implements ShouldQueue
     {
         return [
             'title' => 'Order Confirmed #' . $this->order->order_number,
-            'message' => 'Your order has been placed successfully. Total: $' . number_format($this->order->total_amount, 2),
+            'message' => 'Your order has been placed successfully. Total: ₱' . number_format($this->order->total_amount, 2),
             'type' => 'order',
             'order_id' => $this->order->id,
             'order_number' => $this->order->order_number,

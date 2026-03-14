@@ -1418,7 +1418,7 @@
             <div class="price-section">
                 <div class="price-wrapper">
                     <span class="price">
-                        ${{ number_format($book->price, 2) }}
+                         ₱{{ number_format($book->price, 2) }}
                     </span>
                     @if($book->price > 50)
                         <span class="free-shipping-badge">

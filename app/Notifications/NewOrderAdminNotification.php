@@ -38,13 +38,13 @@ class NewOrderAdminNotification extends Notification implements ShouldQueue
             ->line('- Customer: ' . $this->customer->name)
             ->line('- Customer Email: ' . $this->customer->email)
             ->line('- Order Date: ' . $this->order->created_at->format('F j, Y, g:i a'))
-            ->line('- Total Amount: $' . number_format($this->order->total_amount, 2))
+            ->line('- Total Amount: ₱' . number_format($this->order->total_amount, 2))
             ->line('- Payment Method: ' . ucfirst(str_replace('_', ' ', $this->order->payment_method)))
             ->line('')
             ->line('**Order Items:**');
 
         foreach ($this->order->items as $item) {
-            $mailMessage->line('- ' . $item->book->title . ' x' . $item->quantity . ' - $' . number_format($item->price * $item->quantity, 2));
+            $mailMessage->line('- ' . $item->book->title . ' x' . $item->quantity . ' - ₱' . number_format($item->price * $item->quantity, 2));
         }
 
         return $mailMessage
@@ -56,7 +56,7 @@ class NewOrderAdminNotification extends Notification implements ShouldQueue
     {
         return [
             'title' => 'New Order #' . $this->order->order_number,
-            'message' => 'New order from ' . $this->customer->name . ' - $' . number_format($this->order->total_amount, 2),
+            'message' => 'New order from ' . $this->customer->name . ' - ₱' . number_format($this->order->total_amount, 2),
             'type' => 'admin_order',
             'order_id' => $this->order->id,
             'order_number' => $this->order->order_number,

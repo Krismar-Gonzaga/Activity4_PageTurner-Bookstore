@@ -4,6 +4,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Notifications\PasswordResetNotification;
+use App\Notifications\EmailVerificationNotification;
 
 class User extends Authenticatable{
     use HasFactory, Notifiable;
@@ -15,17 +16,25 @@ class User extends Authenticatable{
         'profile_picture',
         'two_factor_enabled',
         'two_factor_type',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
+        'two_factor_method',
+        'two_factor_confirmed_at',
+        'two_factor_email',
     ];
     
     protected $hidden = [
         'password',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected function casts(): array{
         return [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'two_factor_enabled' => 'boolean',
         ];
     }
 
@@ -215,5 +224,14 @@ class User extends Authenticatable{
     public function routeNotificationForDatabase($notification)
     {
         return $this->notifications();
+    }
+
+    public function getTwoFactorMethodDisplayAttribute(): string
+    {
+        return match($this->two_factor_method) {
+            'app' => 'Authenticator App',
+            'email' => 'Email OTP',
+            default => 'Disabled',
+        };
     }
 }

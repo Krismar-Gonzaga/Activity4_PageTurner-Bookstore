@@ -390,9 +390,9 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="item-price">${{ number_format($item->price, 2) }}</td>
+                                <td class="item-price">₱{{ number_format($item->price, 2) }}</td>
                                 <td>{{ $item->quantity }}</td>
-                                <td class="item-total">${{ number_format($item->price * $item->quantity, 2) }}</td>
+                                <td class="item-total">₱{{ number_format($item->price * $item->quantity, 2) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -403,7 +403,7 @@
             <div class="order-summary">
                 <div class="summary-row">
                     <span>Subtotal:</span>
-                    <span>${{ number_format($order->total_amount, 2) }}</span>
+                    <span>₱{{ number_format($order->total_amount, 2) }}</span>
                 </div>
                 <div class="summary-row">
                     <span>Shipping:</span>
@@ -411,11 +411,11 @@
                 </div>
                 <div class="summary-row">
                     <span>Tax:</span>
-                    <span>$0.00</span>
+                    <span>₱0.00</span>
                 </div>
                 <div class="summary-row total">
                     <span>Total:</span>
-                    <span>${{ number_format($order->total_amount, 2) }}</span>
+                    <span>₱{{ number_format($order->total_amount, 2) }}</span>
                 </div>
             </div>
 

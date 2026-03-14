@@ -799,7 +799,7 @@
                     </svg>
                 </div>
             </div>
-            <div class="stat-value">${{ number_format($stats['total_value'], 2) }}</div>
+            <div class="stat-value">₱{{ number_format($stats['total_value'], 2) }}</div>
             <div class="stat-change">total inventory value</div>
         </div>
     </div>
@@ -881,10 +881,10 @@
                 <div>
                     <select name="price_range" class="filter-select small">
                         <option value="">All Prices</option>
-                        <option value="0-25" {{ request('price_range') == '0-25' ? 'selected' : '' }}>Under $25</option>
-                        <option value="25-50" {{ request('price_range') == '25-50' ? 'selected' : '' }}>$25 - $50</option>
-                        <option value="50-100" {{ request('price_range') == '50-100' ? 'selected' : '' }}>$50 - $100</option>
-                        <option value="100-500" {{ request('price_range') == '100-500' ? 'selected' : '' }}>Over $100</option>
+                        <option value="0-25" {{ request('price_range') == '0-25' ? 'selected' : '' }}>Under ₱25</option>
+                        <option value="25-50" {{ request('price_range') == '25-50' ? 'selected' : '' }}>₱25 - ₱50</option>
+                        <option value="50-100" {{ request('price_range') == '50-100' ? 'selected' : '' }}>₱50 - ₱100</option>
+                        <option value="100-500" {{ request('price_range') == '100-500' ? 'selected' : '' }}>Over ₱100</option>
                     </select>
                 </div>
             </div>
@@ -1119,7 +1119,7 @@
                                 @endif
                             </td>
                             <td>
-                                <span class="price">${{ number_format($book->price, 2) }}</span>
+                                <span class="price">₱{{ number_format($book->price, 2) }}</span>
                             </td>
                             <td>
                                 @if($book->stock_quantity > 10)

@@ -74,7 +74,7 @@
         <div class="content">
             <h2>Two-Factor Authentication Code</h2>
             
-            <p>Hello {{ auth()->user()->name }},</p>
+        
             
             <p>Please use the following verification code to complete your login:</p>
             

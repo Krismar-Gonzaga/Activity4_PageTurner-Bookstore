@@ -55,7 +55,7 @@
                                     {{ $order->items->count() }} items
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-[#8B4513]">
-                                    ${{ number_format($order->total_amount ?? 0, 2) }}
+                                    ₱{{ number_format($order->total_amount ?? 0, 2) }}
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     @php

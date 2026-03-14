@@ -317,7 +317,7 @@
                     
                     <div class="cart-item-details">
                         <h3 class="cart-item-title">{{ $item['title'] }}</h3>
-                        <p class="cart-item-author">Price: ${{ number_format($item['price'], 2) }}</p>
+                        <p class="cart-item-author">Price: ₱{{ number_format($item['price'], 2) }}</p>
                         <p class="text-sm text-gray-500">Available Stock: {{ $item['stock'] }}</p>
 
                     </div>
@@ -351,7 +351,7 @@
             <div class="cart-summary">
                 <div class="summary-row">
                     <span>Subtotal:</span>
-                    <span>${{ number_format($total, 2) }}</span>
+                    <span>₱{{ number_format($total, 2) }}</span>
                 </div>
                 <div class="summary-row">
                     <span>Shipping:</span>
@@ -359,7 +359,7 @@
                 </div>
                 <div class="summary-row summary-total">
                     <span>Total:</span>
-                    <span>${{ number_format($total, 2) }}</span>
+                    <span>₱{{ number_format($total, 2) }}</span>
                 </div>
 
                 <div class="flex justify-between items-center mt-6">
@@ -399,8 +399,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const subtotalElement = document.querySelector('.summary-row:first-child span:last-child');
         const totalElement = document.querySelector('.summary-total span:last-child');
         
-        if (subtotalElement) subtotalElement.textContent = '$' + subtotal.toFixed(2);
-        if (totalElement) totalElement.textContent = '$' + subtotal.toFixed(2);
+        if (subtotalElement) subtotalElement.textContent = '₱' + subtotal.toFixed(2);
+        if (totalElement) totalElement.textContent = '₱' + subtotal.toFixed(2);
     }
 
     // Function to send AJAX update
@@ -528,8 +528,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const subtotalElement = document.querySelector('.summary-row:first-child span:last-child');
             const totalElement = document.querySelector('.summary-total span:last-child');
             
-            if (subtotalElement) subtotalElement.textContent = '$' + subtotal.toFixed(2);
-            if (totalElement) totalElement.textContent = '$' + subtotal.toFixed(2);
+            if (subtotalElement) subtotalElement.textContent = '₱' + subtotal.toFixed(2);
+            if (totalElement) totalElement.textContent = '₱' + subtotal.toFixed(2);
         }
     }
 

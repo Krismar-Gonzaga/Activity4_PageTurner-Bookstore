@@ -288,7 +288,7 @@
                     <div class="summary-item">
                         <div class="summary-item-info">
                             <div class="summary-item-title">{{ $item['title'] }}</div>
-                            <div class="summary-item-price">${{ number_format($item['price'], 2) }}</div>
+                            <div class="summary-item-price">₱{{ number_format($item['price'], 2) }}</div>
                         </div>
                         <div class="summary-item-quantity">x{{ $item['quantity'] }}</div>
                     </div>
@@ -297,7 +297,7 @@
                 <div class="summary-totals">
                     <div class="summary-row">
                         <span>Subtotal:</span>
-                        <span>${{ number_format($total, 2) }}</span>
+                        <span>₱{{ number_format($total, 2) }}</span>
                     </div>
                     <div class="summary-row">
                         <span>Shipping:</span>
@@ -305,11 +305,11 @@
                     </div>
                     <div class="summary-row">
                         <span>Tax:</span>
-                        <span>$0.00</span>
+                        <span>₱0.00</span>
                     </div>
                     <div class="summary-row total">
                         <span>Total:</span>
-                        <span>${{ number_format($total, 2) }}</span>
+                        <span>₱{{ number_format($total, 2) }}</span>
                     </div>
                 </div>
             </div>
@@ -435,7 +435,7 @@
                         
 
                         <button type="submit" class="place-order-btn">
-                            Place Order - ${{ number_format($total, 2) }}
+                            Place Order - ₱{{ number_format($total, 2) }}
                         </button>
                     </form>
                 </div>

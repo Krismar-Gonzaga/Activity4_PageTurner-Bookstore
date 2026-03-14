@@ -25,6 +25,11 @@ class TwoFactorAuthentication extends Model
         'enabled' => 'boolean'
     ];
 
+    protected $hidden = [
+        'secret',
+        'recovery_codes'
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);

@@ -17,11 +17,16 @@ return new class extends Migration
             $table->timestamp('verified_at')->nullable();
             $table->boolean('enabled')->default(false);
             $table->timestamps();
+            $table->unique('user_id');
         });
     }
 
     public function down()
     {
         Schema::dropIfExists('two_factor_authentications');
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropColumn(['two_factor_enabled', 'two_factor_type']);
+        });
     }
 };
