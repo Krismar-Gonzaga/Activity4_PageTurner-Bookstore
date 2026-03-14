@@ -1493,34 +1493,100 @@
             <!-- Action Buttons -->
             <div class="action-buttons">
                 @if($book->stock_quantity > 0)
-                    <form action="{{ route('cart.add', $book) }}" method="POST" class="flex-1 flex items-center gap-2">
-                        @csrf
-                        <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden" style="display: none;">
-                            
-                            <input type="number" 
-                                name="quantity" 
-                                id="quantity" 
-                                value="1" 
-                                min="1" 
-                                max="{{ $book->stock_quantity }}"
-                                class="w-16 text-center border-0 focus:ring-0 quantity-input" 
-                                required>
-                            
-                        </div>
-                        @auth
-                            @if(!auth()->user()->isAdmin())
-                                <button type="submit" class="add-to-cart-btn flex-1">
-                                    <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    @auth
+                        @if(auth()->user()->isAdmin())
+                            <!-- Admin can't add to cart, show admin message -->
+                            <div class="w-full bg-yellow-50 border border-yellow-200 rounded-lg p-4 text-center">
+                                <p class="text-yellow-700">You're logged in as an admin. Use the admin panel to manage books.</p>
+                            </div>
+                        @else
+                            @if(auth()->user()->hasVerifiedEmail())
+                                <!-- Verified user - can add to cart -->
+                                <form action="{{ route('cart.add', $book) }}" method="POST" class="flex-1">
+                                    @csrf
+                                    <div class="flex items-center gap-4">
+                                        <div class="flex items-center border border-gray-300 rounded-lg overflow-hidden">
+                                            <button type="button" 
+                                                    onclick="decrementQuantity()" 
+                                                    class="px-3 py-2 bg-gray-100 hover:bg-gray-200 transition-colors">
+                                                -
+                                            </button>
+                                            <input type="number" 
+                                                name="quantity" 
+                                                id="quantity" 
+                                                value="1" 
+                                                min="1" 
+                                                max="{{ $book->stock_quantity }}"
+                                                class="w-16 text-center border-0 focus:ring-0 quantity-input" 
+                                                required>
+                                            <button type="button" 
+                                                    onclick="incrementQuantity({{ $book->stock_quantity }})" 
+                                                    class="px-3 py-2 bg-gray-100 hover:bg-gray-200 transition-colors">
+                                                +
+                                            </button>
+                                        </div>
+                                        <button type="submit" class="add-to-cart-btn flex-1">
+                                            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                    d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                            </svg>
+                                            Add to Cart - ₱{{ number_format($book->price, 2) }}
+                                        </button>
+                                    </div>
+                                </form>
+                            @else
+                                <!-- Unverified user - show verification message -->
+                                <div class="w-full bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+                                    <svg class="w-12 h-12 text-yellow-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                            d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
                                     </svg>
-                                    Add to Cart - ${{ number_format($book->price, 2) }}
-                                </button>
+                                    <h3 class="text-lg font-bold text-yellow-800 mb-2">Email Verification Required</h3>
+                                    <p class="text-yellow-700 mb-4">
+                                        Please verify your email address before adding items to your cart.
+                                    </p>
+                                    <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                                        <a href="{{ route('verification.notice') }}" 
+                                        class="inline-flex items-center justify-center px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+                                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                            </svg>
+                                            Go to Verification Page
+                                        </a>
+                                        
+                                    </div>
+                                    
+                                    <!-- Hidden form for resend verification -->
+                                    <form id="resend-verification-form" method="POST" action="{{ route('verification.send') }}" class="hidden">
+                                        @csrf
+                                    </form>
+                                </div>
                             @endif
-                        @endauth
-                    </form>
-                    
-                    
+                        @endif
+                    @else
+                        <!-- Guest user - show login message -->
+                        <div class="w-full bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                            <svg class="w-12 h-12 text-blue-500 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                    d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                            </svg>
+                            <h3 class="text-lg font-bold text-blue-800 mb-2">Login Required</h3>
+                            <p class="text-blue-700 mb-4">
+                                Please login to add items to your cart.
+                            </p>
+                            <div class="flex gap-3 justify-center">
+                                <a href="{{ route('login') }}" 
+                                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                                    Login
+                                </a>
+                                <a href="{{ route('register') }}" 
+                                class="px-4 py-2 bg-white border border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors">
+                                    Register
+                                </a>
+                            </div>
+                        </div>
+                    @endauth
                 @else
                     <button type="button" disabled class="out-of-stock-btn">
                         Out of Stock

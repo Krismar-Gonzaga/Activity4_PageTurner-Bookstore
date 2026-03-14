@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
@@ -65,6 +66,12 @@ class CartController extends Controller
         if ($book->stock_quantity < $request->quantity) {
             return redirect()->back()
                 ->with('error', 'Insufficient stock. Only ' . $book->stock_quantity . ' items available.');
+        }
+
+        // Check if user's email is verified
+        if (!Auth::user()->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice')
+                ->with('error', 'Please verify your email address before adding items to cart.');
         }
         
         $cart = session()->get('cart', []);

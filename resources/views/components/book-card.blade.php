@@ -552,19 +552,29 @@
             
             @auth
                 @if(!auth()->user()->isAdmin() && $book->stock_quantity > 0)
-                    <form action="{{ route('cart.add', $book) }}" method="POST" class="flex-1 flex items-center gap-2">
-                        @csrf
-                        <input type="number" style="display:none;"
-                            name="quantity" 
-                            value="1" 
-                            min="1" 
-                            max="{{ $book->stock_quantity }}"
-                            class="w-16 px-2 py-2 border border-gray-300 rounded-lg text-center text-sm focus:ring-2 focus:ring-[#8B4513] focus:border-[#8B4513]"
-                            required>
-                        <button type="submit" class="add-to-cart-btn text-sm py-2 px-3">
-                            Add to Cart
-                        </button>
-                    </form>
+                    @if(auth()->user()->hasVerifiedEmail())
+                        <!-- Verified user - can add to cart -->
+                        <form action="{{ route('cart.add', $book) }}" method="POST" class="flex-1">
+                            @csrf
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit" class="add-to-cart-btn text-sm py-2 px-3">
+                                Add to Cart
+                            </button>
+                        </form>
+                    @else
+                        <!-- Unverified user - direct link to verification page -->
+                        <a href="{{ route('verification.notice') }}" 
+                        class="add-to-cart-btn text-sm py-2 px-3 verify-email-btn" 
+                        style="background: linear-gradient(135deg, #f59e0b, #d97706); text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                            <span class="flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                </svg>
+                                Verify Email
+                            </span>
+                        </a>
+                    @endif
                 @endif
             @else
                 @if($book->stock_quantity > 0)
