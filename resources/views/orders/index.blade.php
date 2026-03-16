@@ -1,7 +1,9 @@
 @extends('layouts.app')
 
 @section('title', 'Orders - PageTurner')
-
+@php
+    use Illuminate\Support\Facades\Auth;
+@endphp
 @section('header')
     <div class="flex justify-between items-center">
         <div>
