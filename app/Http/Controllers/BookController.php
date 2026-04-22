@@ -103,7 +103,16 @@ class BookController extends Controller
         // Paginate results
         $books = $query->paginate(12)->withQueryString();
         
-        return view('books.index', compact('books', 'categories'));
+        $stats = [
+            'total_books' => Book::count(),
+            'total_stock' => Book::sum('stock_quantity'),
+            'low_stock_count' => Book::whereBetween('stock_quantity', [1, 5])->count(),
+            'out_of_stock_count' => Book::where('stock_quantity', 0)->count(),
+            'total_value' => Book::sum(\DB::raw('price * stock_quantity')),
+            'total_categories' => Category::count(),
+        ];
+        
+        return view('books.index', compact('books', 'categories', 'stats'));    
     }
 
     public function create()

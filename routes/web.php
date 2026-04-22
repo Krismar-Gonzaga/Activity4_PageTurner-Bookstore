@@ -201,4 +201,65 @@ Route::middleware(['auth'])->group(function () {
 });
 
 
+
+Route::middleware(['auth'])->prefix('admin')->group(function () {
+    Route::get('/books/import', [App\Http\Controllers\Admin\BookImportController::class, 'showForm'])
+        ->name('admin.books.import.form');
+    Route::post('/books/import/upload', [App\Http\Controllers\Admin\BookImportController::class, 'upload'])
+        ->name('admin.books.import.upload');
+    Route::get('/books/import/status/{id}', [App\Http\Controllers\Admin\BookImportController::class, 'getStatus'])
+        ->name('admin.books.import.status');
+    Route::get('/books/import/template', [App\Http\Controllers\Admin\BookImportController::class, 'downloadTemplate'])
+        ->name('admin.books.import.template');
+    Route::get('/books/import/errors/{id}', [App\Http\Controllers\Admin\BookImportController::class, 'downloadErrorReport'])
+        ->name('admin.books.import.errors');
+});
+
+
+// routes/web.php
+
+Route::middleware(['auth'])->prefix('admin')->group(function () {
+    // Export routes
+    Route::post('/books/export', [App\Http\Controllers\Admin\BookExportController::class, 'export'])
+        ->name('admin.books.export');
+    Route::get('/books/export/status/{id}', [App\Http\Controllers\Admin\BookExportController::class, 'getStatus'])
+        ->name('admin.books.export.status');
+    Route::get('/books/export/download/{id}', [App\Http\Controllers\Admin\BookExportController::class, 'download'])
+        ->name('admin.books.export.download');
+    Route::get('/books/export/list', [App\Http\Controllers\Admin\BookExportController::class, 'getExports'])
+        ->name('admin.books.export.list');
+    Route::delete('/books/export/{id}', [App\Http\Controllers\Admin\BookExportController::class, 'deleteExport'])
+        ->name('admin.books.export.delete');
+});
+
+
+// Admin Order Exports
+Route::middleware(['auth'])->prefix('admin')->group(function () {
+    Route::post('/orders/export', [App\Http\Controllers\Admin\OrderExportController::class, 'exportOrders'])
+        ->name('admin.orders.export');
+    Route::get('/orders/export/status/{id}', [App\Http\Controllers\Admin\OrderExportController::class, 'getExportStatus'])
+        ->name('admin.orders.export.status');
+    Route::get('/orders/export/download/{id}', [App\Http\Controllers\Admin\OrderExportController::class, 'downloadExport'])
+        ->name('admin.orders.export.download');
+    
+    // Financial Reports
+    Route::get('/reports/revenue/export', [App\Http\Controllers\Admin\OrderExportController::class, 'exportRevenueSummary'])
+        ->name('admin.reports.revenue.export');
+    Route::get('/reports/tax/export', [App\Http\Controllers\Admin\OrderExportController::class, 'exportTaxReport'])
+        ->name('admin.reports.tax.export');
+    
+    // Scheduled Exports
+    Route::get('/exports/scheduled', [App\Http\Controllers\Admin\OrderExportController::class, 'listScheduledExports'])
+        ->name('admin.exports.scheduled');
+    Route::post('/exports/scheduled', [App\Http\Controllers\Admin\OrderExportController::class, 'createScheduledExport'])
+        ->name('admin.exports.scheduled.create');
+});
+
+// Customer Order Export
+Route::middleware(['auth'])->group(function () {
+    Route::get('/my-orders/export', [App\Http\Controllers\Admin\OrderExportController::class, 'exportMyOrders'])
+        ->name('my-orders.export');
+});
+
+
 require __DIR__.'/auth.php';

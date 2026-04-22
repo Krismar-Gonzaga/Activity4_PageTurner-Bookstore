@@ -10,6 +10,8 @@
         </div>
         
     </div>
+
+    
 @endsection
 
 @section('content')
@@ -829,6 +831,15 @@
                 <div class="quick-action-subtitle">Create a new product category</div>
             </div>
         </a>
+        {{-- Add this to the inventory page header actions --}}
+        <div class="header-actions">
+            <a href="{{ route('admin.books.import.form') }}" class="action-btn secondary">
+                <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                </svg>
+                Import Books
+            </a>
+        </div>
     </div>
 
     <!-- Filter Section -->
@@ -1215,5 +1226,382 @@
             @endif
         </div>
     @endif
+    {{-- Export Modal --}}
+<div x-data="exportModal()" x-init="init()">
+    <!-- Export Button -->
+    <button @click="openModal()" class="export-btn ml-2">
+        <svg class="apply-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+        </svg>
+        Export
+    </button>
+
+    <!-- Export Modal -->
+    <div x-show="isOpen" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto" 
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 transition-opacity" @click="closeModal()">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <form @submit.prevent="submitExport()">
+                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mt-3 text-center sm:mt-0 sm:text-left w-full">
+                                <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
+                                    Export Books
+                                </h3>
+                                
+                                <!-- Format Selection -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Export Format
+                                    </label>
+                                    <div class="flex gap-3">
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" x-model="exportFormat" value="xlsx" class="form-radio">
+                                            <span class="ml-2">Excel (XLSX)</span>
+                                        </label>
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" x-model="exportFormat" value="csv" class="form-radio">
+                                            <span class="ml-2">CSV</span>
+                                        </label>
+                                        <label class="inline-flex items-center">
+                                            <input type="radio" x-model="exportFormat" value="pdf" class="form-radio">
+                                            <span class="ml-2">PDF</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Field Selection -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Select Fields to Export
+                                    </label>
+                                    <div class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border rounded p-3">
+                                        <template x-for="(label, field) in availableFields" :key="field">
+                                            <label class="inline-flex items-center">
+                                                <input type="checkbox" 
+                                                       x-model="selectedFields" 
+                                                       :value="field" 
+                                                       class="form-checkbox">
+                                                <span class="ml-2 text-sm" x-text="label"></span>
+                                            </label>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                <!-- Date Range Filter -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Date Range (Optional)
+                                    </label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="date" 
+                                               x-model="dateFrom" 
+                                               class="border rounded px-3 py-2 text-sm"
+                                               placeholder="From">
+                                        <input type="date" 
+                                               x-model="dateTo" 
+                                               class="border rounded px-3 py-2 text-sm"
+                                               placeholder="To">
+                                    </div>
+                                </div>
+
+                                <!-- Stock Range Filter -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Stock Range (Optional)
+                                    </label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="number" 
+                                               x-model="stockMin" 
+                                               class="border rounded px-3 py-2 text-sm"
+                                               placeholder="Min stock">
+                                        <input type="number" 
+                                               x-model="stockMax" 
+                                               class="border rounded px-3 py-2 text-sm"
+                                               placeholder="Max stock">
+                                    </div>
+                                </div>
+
+                                <!-- Price Range Filter -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        Price Range (Optional)
+                                    </label>
+                                    <div class="grid grid-cols-2 gap-2">
+                                        <input type="number" 
+                                               x-model="priceMin" 
+                                               class="border rounded px-3 py-2 text-sm"
+                                               placeholder="Min price"
+                                               step="0.01">
+                                        <input type="number" 
+                                               x-model="priceMax" 
+                                               class="border rounded px-3 py-2 text-sm"
+                                               placeholder="Max price"
+                                               step="0.01">
+                                    </div>
+                                </div>
+
+                                <!-- Progress Bar -->
+                                <div x-show="exporting" class="mt-4">
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span>Exporting...</span>
+                                        <span x-text="exportProgress + '%'"></span>
+                                    </div>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" :style="{ width: exportProgress + '%' }"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Error Message -->
+                                <div x-show="errorMessage" class="mt-4 p-3 bg-red-100 text-red-700 rounded text-sm" x-text="errorMessage"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                        <button type="submit" 
+                                :disabled="exporting || selectedFields.length === 0"
+                                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-pageturner-primary text-base font-medium text-white hover:bg-pageturner-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pageturner-primary sm:ml-3 sm:w-auto sm:text-sm"
+                                :class="{'opacity-50 cursor-not-allowed': exporting || selectedFields.length === 0}">
+                            <span x-show="!exporting">Start Export</span>
+                            <span x-show="exporting">Processing...</span>
+                        </button>
+                        <button type="button" 
+                                @click="closeModal()"
+                                class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pageturner-primary sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Exports Panel -->
+    <div class="mt-4" x-show="recentExports.length > 0">
+        <div class="bg-white rounded-lg shadow p-4">
+            <h4 class="font-semibold mb-3">Recent Exports</h4>
+            <div class="space-y-2">
+                <template x-for="export in recentExports" :key="export.id">
+                    <div class="flex justify-between items-center p-2 hover:bg-gray-50 rounded">
+                        <div>
+                            <p class="text-sm font-medium" x-text="export.filename || 'Export ' + export.id"></p>
+                            <p class="text-xs text-gray-500" x-text="formatDate(export.created_at)"></p>
+                        </div>
+                        <div class="flex gap-2">
+                            <span class="text-xs px-2 py-1 rounded" 
+                                  :class="{
+                                      'bg-yellow-100 text-yellow-800': export.status === 'pending',
+                                      'bg-blue-100 text-blue-800': export.status === 'processing',
+                                      'bg-green-100 text-green-800': export.status === 'completed',
+                                      'bg-red-100 text-red-800': export.status === 'failed'
+                                  }"
+                                  x-text="export.status">
+                            </span>
+                            <template x-if="export.status === 'completed'">
+                                <a :href="`{{ url('admin/books/export/download') }}/${export.id}`" 
+                                   class="text-pageturner-primary hover:text-pageturner-secondary text-sm">
+                                    Download
+                                </a>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function exportModal() {
+    return {
+        isOpen: false,
+        exporting: false,
+        exportFormat: 'xlsx',
+        selectedFields: ['isbn', 'title', 'author', 'category', 'price', 'stock_quantity'],
+        availableFields: {
+            'isbn': 'ISBN',
+            'title': 'Title',
+            'author': 'Author',
+            'category': 'Category',
+            'price': 'Price',
+            'stock_quantity': 'Stock',
+            'description': 'Description',
+            'published_year': 'Published Year',
+            'publisher': 'Publisher',
+            'language': 'Language',
+            'pages': 'Pages',
+            'created_at': 'Created Date',
+            'average_rating': 'Average Rating',
+            'reviews_count': 'Number of Reviews'
+        },
+        dateFrom: '',
+        dateTo: '',
+        stockMin: '',
+        stockMax: '',
+        priceMin: '',
+        priceMax: '',
+        exportProgress: 0,
+        errorMessage: '',
+        exportId: null,
+        progressInterval: null,
+        recentExports: [],
+        
+        init() {
+            this.loadRecentExports();
+            setInterval(() => this.loadRecentExports(), 30000); // Refresh every 30 seconds
+        },
+        
+        openModal() {
+            this.isOpen = true;
+            this.loadRecentExports();
+        },
+        
+        closeModal() {
+            this.isOpen = false;
+            if (this.progressInterval) {
+                clearInterval(this.progressInterval);
+            }
+        },
+        
+        async submitExport() {
+            if (this.selectedFields.length === 0) {
+                alert('Please select at least one field to export');
+                return;
+            }
+            
+            this.exporting = true;
+            this.errorMessage = '';
+            
+            // Get current filters from the page
+            const formData = new FormData();
+            formData.append('format', this.exportFormat);
+            this.selectedFields.forEach(field => {
+                formData.append('fields[]', field);
+            });
+            
+            // Add current filters
+            const searchInput = document.querySelector('input[name="search"]');
+            if (searchInput && searchInput.value) formData.append('search', searchInput.value);
+            
+            const categorySelect = document.querySelector('select[name="category"]');
+            if (categorySelect && categorySelect.value) formData.append('category', categorySelect.value);
+            
+            const priceRange = document.querySelector('select[name="price_range"]');
+            if (priceRange && priceRange.value) formData.append('price_range', priceRange.value);
+            
+            const inStock = document.querySelector('input[name="in_stock"]');
+            if (inStock && inStock.checked) formData.append('in_stock', '1');
+            
+            const lowStock = document.querySelector('input[name="low_stock"]');
+            if (lowStock && lowStock.checked) formData.append('low_stock', '1');
+            
+            const outOfStock = document.querySelector('input[name="out_of_stock"]');
+            if (outOfStock && outOfStock.checked) formData.append('out_of_stock', '1');
+            
+            const minRating = document.querySelector('select[name="min_rating"]');
+            if (minRating && minRating.value) formData.append('min_rating', minRating.value);
+            
+            const sort = document.querySelector('select[name="sort"]');
+            if (sort && sort.value) formData.append('sort', sort.value);
+            
+            // Add custom filters
+            if (this.dateFrom) formData.append('date_from', this.dateFrom);
+            if (this.dateTo) formData.append('date_to', this.dateTo);
+            if (this.stockMin !== '') formData.append('stock_min', this.stockMin);
+            if (this.stockMax !== '') formData.append('stock_max', this.stockMax);
+            if (this.priceMin !== '') formData.append('price_min', this.priceMin);
+            if (this.priceMax !== '') formData.append('price_max', this.priceMax);
+            
+            try {
+                const response = await fetch('{{ route("admin.books.export") }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    this.exportId = data.export_id;
+                    this.startPolling();
+                } else {
+                    this.errorMessage = data.message || 'Export failed';
+                    this.exporting = false;
+                }
+            } catch (error) {
+                console.error('Export error:', error);
+                this.errorMessage = 'An error occurred while starting the export';
+                this.exporting = false;
+            }
+        },
+        
+        startPolling() {
+            this.progressInterval = setInterval(async () => {
+                await this.fetchProgress();
+            }, 2000);
+        },
+        
+        async fetchProgress() {
+            if (!this.exportId) return;
+            
+            try {
+                const response = await fetch(`{{ url("admin/books/export/status") }}/${this.exportId}`);
+                const data = await response.json();
+                
+                this.exportProgress = data.progress;
+                
+                if (data.status === 'completed') {
+                    clearInterval(this.progressInterval);
+                    this.exporting = false;
+                    this.loadRecentExports();
+                    setTimeout(() => {
+                        window.location.href = `{{ url("admin/books/export/download") }}/${this.exportId}`;
+                        this.closeModal();
+                    }, 1000);
+                } else if (data.status === 'failed') {
+                    clearInterval(this.progressInterval);
+                    this.exporting = false;
+                    this.errorMessage = data.error_message || 'Export failed';
+                }
+            } catch (error) {
+                console.error('Error fetching progress:', error);
+            }
+        },
+        
+        async loadRecentExports() {
+            try {
+                const response = await fetch('{{ route("admin.books.export.list") }}');
+                const data = await response.json();
+                this.recentExports = data.data || [];
+            } catch (error) {
+                console.error('Error loading exports:', error);
+            }
+        },
+        
+        formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString();
+        }
+    }
+}
+</script>
+
+<style>
+[x-cloak] { display: none !important; }
+.form-radio, .form-checkbox {
+    width: 1rem;
+    height: 1rem;
+    color: #8B4513;
+}
+</style>
 </div>
 @endsection
