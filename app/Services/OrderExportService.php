@@ -7,10 +7,6 @@ use App\Models\Order;
 use App\Models\ExportLog;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\ExportReadyMail;
-
 class OrderExportService
 {
     protected $chunkSize = 1000;
@@ -125,12 +121,12 @@ class OrderExportService
                 fputcsv($handle, [
                     $order->id,
                     $order->order_number,
-                    $order->user->name,
-                    $order->user->email,
+                    $order->user?->name ?? 'N/A',
+                    $order->user?->email ?? 'N/A',
                     $order->total_amount,
                     $order->status,
-                    $order->payment_status,
-                    $order->payment_method,
+                    $order->payment_status ?? 'N/A',
+                    $order->payment_method ?? 'N/A',
                     $order->created_at->format('Y-m-d H:i:s'),
                     $order->items->count(),
                     $order->shipping_address
@@ -155,9 +151,9 @@ class OrderExportService
             
         if ($format === 'pdf') {
             return $this->generateCustomerInvoicePDF($orders, $userId);
-        } else {
-            return $this->generateCustomerOrdersCSV($orders, $userId);
         }
+
+        return $this->generateCustomerOrdersCSV($orders, $userId);
     }
     
     /**
@@ -183,6 +179,37 @@ class OrderExportService
         $dompdf->render();
         file_put_contents($filepath, $dompdf->output());
         
+        return $filepath;
+    }
+
+    protected function generateCustomerOrdersCSV($orders, $userId)
+    {
+        $user = User::findOrFail($userId);
+        $directory = storage_path('app/exports/customers');
+
+        if (!file_exists($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        $filename = "customer_orders_{$user->id}_" . date('Ymd_His') . '.csv';
+        $filepath = $directory . '/' . $filename;
+        $handle = fopen($filepath, 'w');
+        fwrite($handle, "\xEF\xBB\xBF");
+
+        fputcsv($handle, ['Order Number', 'Order Date', 'Status', 'Payment Status', 'Total Amount']);
+
+        foreach ($orders as $order) {
+            fputcsv($handle, [
+                $order->order_number,
+                $order->created_at->format('Y-m-d H:i:s'),
+                ucfirst($order->status),
+                ucfirst($order->payment_status ?? 'pending'),
+                number_format((float) $order->total_amount, 2, '.', ''),
+            ]);
+        }
+
+        fclose($handle);
+
         return $filepath;
     }
     
@@ -278,27 +305,43 @@ class OrderExportService
     
     protected function getTopCustomers($filters)
     {
-        return Order::where('status', '!=', 'cancelled')
+        $query = Order::where('status', '!=', 'cancelled')
             ->where('payment_status', 'paid')
             ->select('user_id', DB::raw('SUM(total_amount) as total_spent'), DB::raw('COUNT(*) as order_count'))
             ->with('user')
             ->groupBy('user_id')
             ->orderBy('total_spent', 'desc')
-            ->limit(10)
-            ->get();
+            ->limit(10);
+
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        return $query->get();
     }
     
     protected function getTopProducts($filters)
     {
-        return DB::table('order_items')
+        $query = DB::table('order_items')
             ->join('books', 'order_items.book_id', '=', 'books.id')
             ->join('orders', 'order_items.order_id', '=', 'orders.id')
             ->where('orders.status', '!=', 'cancelled')
             ->select('books.title', DB::raw('SUM(order_items.quantity) as total_quantity'), DB::raw('SUM(order_items.subtotal) as total_revenue'))
             ->groupBy('books.id', 'books.title')
             ->orderBy('total_revenue', 'desc')
-            ->limit(10)
-            ->get();
+            ->limit(10);
+
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('orders.created_at', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('orders.created_at', '<=', $filters['date_to']);
+        }
+
+        return $query->get();
     }
     
     protected function getTaxByMonth($filters)
@@ -361,7 +404,7 @@ class OrderExportService
             fputcsv($handle, ['Customer', 'Orders', 'Total Spent']);
             foreach ($summary['top_customers'] as $customer) {
                 fputcsv($handle, [
-                    $customer->user->name,
+                    $customer->user?->name ?? 'N/A',
                     $customer->order_count,
                     number_format($customer->total_spent, 2)
                 ]);

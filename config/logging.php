@@ -127,6 +127,16 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
 
+        // ── Dedicated AI audit channel ─────────────────────────────────────────
+        // Route all AI decision logs here: Log::channel('ai_audit')->info(...)
+        'ai_audit' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/ai_audit.log'),
+            'level'  => 'info',
+            'days'   => 60,
+            'replace_placeholders' => true,
+        ],
+
     ],
 
 ];

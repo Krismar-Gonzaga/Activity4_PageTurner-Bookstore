@@ -10,8 +10,6 @@ use App\Models\ScheduledExport;
 use App\Models\User;
 use App\Services\OrderExportService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\ExportReadyMail;
 
 class OrderExportController extends Controller
 {
@@ -20,7 +18,6 @@ class OrderExportController extends Controller
     public function __construct(OrderExportService $exportService)
     {
         $this->exportService = $exportService;
-        $this->middleware('auth');
     }
     
     /**
@@ -28,10 +25,10 @@ class OrderExportController extends Controller
      */
     public function exportOrders(Request $request)
     {
-        $this->authorize('admin-access');
+        abort_unless(auth()->user()?->isAdmin(), 403);
         
         $request->validate([
-            'format' => 'required|in:csv,xlsx,pdf',
+            'format' => 'required|in:csv',
             'status' => 'nullable|string',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date',
@@ -52,11 +49,15 @@ class OrderExportController extends Controller
         // Process export in background
         dispatch(new \App\Jobs\ProcessOrderExport($exportLog->id, $request->all(), $request->format));
         
-        return response()->json([
-            'success' => true,
-            'export_id' => $exportLog->id,
-            'message' => 'Export started. You will be notified when ready.'
-        ]);
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'export_id' => $exportLog->id,
+                'message' => 'Export started. You will be notified when ready.'
+            ]);
+        }
+
+        return back()->with('success', 'Order export started. Check Recent Export Jobs for status.');
     }
     
     /**
@@ -65,11 +66,12 @@ class OrderExportController extends Controller
     public function exportMyOrders(Request $request)
     {
         $request->validate([
-            'format' => 'required|in:csv,pdf'
+            'format' => 'required|in:pdf'
         ]);
         
         try {
-            $filePath = $this->exportService->exportCustomerOrders(auth()->id(), $request->format);
+            // Personal customer order-history export in PDF invoice format only.
+            $filePath = $this->exportService->exportCustomerOrders(auth()->id(), 'pdf');
             
             return response()->download($filePath);
         } catch (\Exception $e) {
@@ -82,10 +84,10 @@ class OrderExportController extends Controller
      */
     public function exportRevenueSummary(Request $request)
     {
-        $this->authorize('admin-access');
+        abort_unless(auth()->user()?->isAdmin(), 403);
         
         $request->validate([
-            'format' => 'required|in:csv,xlsx',
+            'format' => 'required|in:csv',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date'
         ]);
@@ -104,10 +106,10 @@ class OrderExportController extends Controller
      */
     public function exportTaxReport(Request $request)
     {
-        $this->authorize('admin-access');
+        abort_unless(auth()->user()?->isAdmin(), 403);
         
         $request->validate([
-            'format' => 'required|in:csv,xlsx',
+            'format' => 'required|in:csv',
             'date_from' => 'nullable|date',
             'date_to' => 'nullable|date'
         ]);
@@ -157,24 +159,49 @@ class OrderExportController extends Controller
      */
     public function listScheduledExports()
     {
-        $this->authorize('admin-access');
+        abort_unless(auth()->user()?->isAdmin(), 403);
         
-        $scheduledExports = ScheduledExport::all();
+        $scheduledExports = ScheduledExport::latest()->get();
         return view('admin.exports.scheduled', compact('scheduledExports'));
+    }
+
+    /**
+     * Export management dashboard UI.
+     */
+    public function index()
+    {
+        abort_unless(auth()->user()?->isAdmin(), 403);
+
+        $statuses = ['pending', 'processing', 'shipped', 'delivered', 'cancelled'];
+        $customers = User::where('role', 'customer')->orderBy('name')->get(['id', 'name', 'email']);
+        $recentExports = ExportLog::with('user')->latest()->limit(10)->get();
+        $scheduledExports = ScheduledExport::latest()->limit(5)->get();
+
+        return view('admin.exports.index', compact('statuses', 'customers', 'recentExports', 'scheduledExports'));
     }
     
     public function createScheduledExport(Request $request)
     {
-        $this->authorize('admin-access');
+        abort_unless(auth()->user()?->isAdmin(), 403);
         
         $request->validate([
             'name' => 'required|string|max:255',
-            'type' => 'required|in:daily_sales,weekly_summary,monthly_report',
-            'format' => 'required|in:csv,xlsx',
+            'type' => 'required|in:daily_sales',
+            'format' => 'required|in:csv',
             'schedule' => 'required|in:daily,weekly,monthly',
-            'recipients' => 'required|array',
-            'recipients.*' => 'email'
+            'recipients' => 'required|string'
         ]);
+
+        $recipients = collect(explode(',', $request->recipients))
+            ->map(fn ($email) => trim($email))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($recipients)) {
+            return back()->withErrors(['recipients' => 'Please provide at least one recipient email.']);
+        }
         
         $scheduledExport = ScheduledExport::create([
             'name' => $request->name,
@@ -182,14 +209,11 @@ class OrderExportController extends Controller
             'format' => $request->format,
             'filters' => $request->filters ?? [],
             'schedule' => $request->schedule,
-            'recipients' => $request->recipients,
+            'recipients' => $recipients,
             'next_run_at' => $this->calculateNextRun($request->schedule)
         ]);
         
-        return response()->json([
-            'success' => true,
-            'scheduled_export' => $scheduledExport
-        ]);
+        return back()->with('success', "Scheduled export '{$scheduledExport->name}' has been created.");
     }
     
     protected function calculateNextRun($schedule)

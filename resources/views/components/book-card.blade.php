@@ -1,5 +1,13 @@
 @props(['book'])
 
+@php
+    /** @var \Illuminate\Database\Eloquent\Collection<int, \App\Models\Book>|\Illuminate\Database\Eloquent\Model|\App\Models\Book $book */
+    $averageRating = (float) ($book->average_rating ?? 0);
+    $fullStars     = (int) floor($averageRating);
+    $hasHalfStar   = ($averageRating - $fullStars) >= 0.5;
+    $emptyStars    = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
+@endphp
+
 <style>
     :root {
         --pageturner-primary: #8B4513;
@@ -21,8 +29,7 @@
         transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         border: 1px solid rgba(139, 69, 19, 0.12);
         position: relative;
-        width: 200%; 
-       
+        width: 200%;
         max-width: 300px;
         box-shadow: var(--shadow-elegant);
     }
@@ -136,6 +143,42 @@
     /* Content Section */
     .content-section {
         padding: 1.5rem;
+    }
+
+    /* AI callout chip */
+    .ai-callout {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: #ecfdf5;
+        border: 1px solid #6ee7b7;
+        border-radius: 999px;
+        color: #065f46;
+        font-size: 0.72rem;
+        font-weight: 600;
+        padding: 0.22rem 0.6rem;
+    }
+
+    /* TTS listen button */
+    .listen-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+        background: linear-gradient(135deg, #8B5CF6, #6D28D9);
+        color: white;
+        border: none;
+        border-radius: 999px;
+        padding: 0.25rem 0.75rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+
+    .listen-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
     }
 
     /* Title */
@@ -332,15 +375,6 @@
         transform: translateY(-2px);
     }
 
-    /* Hover Effects */
-    .hover-lift {
-        transition: transform 0.3s ease;
-    }
-
-    .hover-lift:hover {
-        transform: translateY(-2px);
-    }
-
     /* Stock Information */
     .stock-info {
         display: flex;
@@ -373,12 +407,8 @@
     }
 
     @keyframes pulse {
-        0%, 100% {
-            opacity: 1;
-        }
-        50% {
-            opacity: 0.5;
-        }
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
     }
 
     .stock-text {
@@ -415,68 +445,67 @@
     }
 </style>
 
-<div class="book-card" >
+<div class="book-card">
     <!-- Book Cover -->
     <div class="cover-section">
         @if($book->cover_image)
-            <img src="{{ asset('storage/' . $book->cover_image) }}" 
-                 alt="{{ $book->title }}" 
-                 class="cover-image">
+            <img src="{{ asset('storage/' . $book->cover_image) }}" alt="{{ $book->title }}" class="cover-image">
         @else
             <div class="no-cover">
                 <svg class="no-cover-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
                     </path>
                 </svg>
                 <span class="no-cover-text">No Cover</span>
             </div>
         @endif
-        
-        <!-- Book spine effect overlay -->
+
         <div class="spine-effect"></div>
-        
-        <!-- Stock Status Badge -->
-        @if($book->stock_quantity > 0)
-            <div class="stock-badge in-stock">
-                In Stock
-            </div>
-        @else
-            <div class="stock-badge out-of-stock">
-                Out of Stock
-            </div>
-        @endif
+
+        <div class="stock-badge {{ $book->stock_quantity > 0 ? 'in-stock' : 'out-of-stock' }}">
+            {{ $book->stock_quantity > 0 ? 'In Stock' : 'Out of Stock' }}
+        </div>
     </div>
 
     <!-- Book Info -->
     <div class="content-section">
+
+        <!-- AI Callout — named slot for external callers -->
+        @php($__aiCallout = $attributes->get('aiCalloutTitleTopSlot'))
+        @if($__aiCallout)
+            <div style="margin-bottom:.4rem;">
+                {{ $__aiCallout }}
+            </div>
+        @endif
+
         <!-- Title -->
         <h3 class="book-title">
-            <a href="{{ route('books.show', $book) }}">
-                {{ $book->title }}
-            </a>
+            <a href="{{ route('books.show', $book) }}">{{ $book->title }}</a>
         </h3>
-        
+
         <!-- Author -->
-        <p class="book-author">
-            by <span class="author-name">{{ $book->author }}</span>
-        </p>
-        
+        <p class="book-author">by <span class="author-name">{{ $book->author }}</span></p>
+
         <!-- Category -->
         @if($book->category)
             <div class="category-tag">
-                <span class="category-badge">
-                    {{ $book->category->name }}
-                </span>
+                <span class="category-badge">{{ $book->category->name }}</span>
             </div>
         @endif
-        
+
         <!-- Price -->
-        <p class="book-price">
-            ₱{{ number_format($book->price, 2) }}
-        </p>
-        
-        <!-- Stock Information  -->
+        <p class="book-price">₱{{ number_format($book->price, 2) }}</p>
+
+        <!-- AI TTS / Description Slot (after price, before stock info) -->
+        @php($__aiTts = $attributes->get('aiTtsAfterPriceSlot'))
+        @if($__aiTts)
+            <div style="margin-bottom:.8rem;">
+                {{ $__aiTts }}
+            </div>
+        @endif
+
+        <!-- Stock Information -->
         @if($book->stock_quantity > 0)
             <div class="stock-info mb-3 flex items-center gap-2">
                 <div class="stock-indicator w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
@@ -497,21 +526,13 @@
         <!-- Star Rating -->
         <div class="rating-section">
             <div class="stars-container">
-                @php
-                    $averageRating = $book->average_rating ?? 0;
-                    $fullStars = floor($averageRating);
-                    $hasHalfStar = ($averageRating - $fullStars) >= 0.5;
-                    $emptyStars = 5 - $fullStars - ($hasHalfStar ? 1 : 0);
-                @endphp
-                
-                <!-- Full Stars -->
+
                 @for($i = 1; $i <= $fullStars; $i++)
                     <svg class="star-filled" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                     </svg>
                 @endfor
-                
-                <!-- Half Star -->
+
                 @if($hasHalfStar)
                     <div class="star-half-container">
                         <svg class="star-half-bg" viewBox="0 0 20 20">
@@ -522,67 +543,60 @@
                         </svg>
                     </div>
                 @endif
-                
-                <!-- Empty Stars -->
+
                 @for($i = 1; $i <= $emptyStars; $i++)
                     <svg class="star-empty" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
                     </svg>
                 @endfor
             </div>
-            
-            <!-- Review Count -->
-            <span class="rating-count">
-                ({{ $book->reviews_count ?? $book->reviews->count() }})
-            </span>
-            
-            <!-- Average Rating Number -->
+
+            <span class="rating-count">({{ $book->reviews_count ?? $book->reviews->count() }})</span>
+
             @if($averageRating > 0)
-                <span class="rating-average">
-                    {{ number_format($averageRating, 1) }}
-                </span>
+                <span class="rating-average">{{ number_format($averageRating, 1) }}</span>
             @endif
         </div>
 
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-            <a href="{{ route('books.show', $book) }}" class="view-details-btn">
-                View Details
-            </a>
-            
-            @auth
-                @if(!auth()->user()->isAdmin() && $book->stock_quantity > 0)
-                    @if(auth()->user()->hasVerifiedEmail())
-                        <!-- Verified user - can add to cart -->
-                        <form action="{{ route('cart.add', $book) }}" method="POST" class="flex-1">
-                            @csrf
-                            <input type="hidden" name="quantity" value="1">
-                            <button type="submit" class="add-to-cart-btn text-sm py-2 px-3">
-                                Add to Cart
-                            </button>
-                        </form>
-                    @else
-                        <!-- Unverified user - direct link to verification page -->
-                        <a href="{{ route('verification.notice') }}" 
-                        class="add-to-cart-btn text-sm py-2 px-3 verify-email-btn" 
-                        style="background: linear-gradient(135deg, #f59e0b, #d97706); text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
-                            <span class="flex items-center justify-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                                </svg>
-                                Verify Email
-                            </span>
-                        </a>
+        <!-- Action Buttons Slot (replaces default buttons, e.g. for browse page) -->
+        @php($__aiButtons = $attributes->get('aiCustomActionButtonsSlot'))
+        @if($__aiButtons)
+            <div class="action-buttons">
+                {{ $__aiButtons }}
+            </div>
+        <!-- Default action buttons -->
+        @else
+            <div class="action-buttons">
+                <a href="{{ route('books.show', $book) }}" class="view-details-btn">View Details</a>
+
+                @auth
+                    @if(!auth()->user()->isAdmin() && $book->stock_quantity > 0)
+                        @if(auth()->user()->hasVerifiedEmail())
+                            <form action="{{ route('cart.add', $book) }}" method="POST" class="flex-1">
+                                @csrf
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="add-to-cart-btn text-sm py-2 px-3">Add to Cart</button>
+                            </form>
+                        @else
+                            <a href="{{ route('verification.notice') }}"
+                               class="add-to-cart-btn text-sm py-2 px-3 verify-email-btn"
+                               style="background: linear-gradient(135deg, #f59e0b, #d97706); text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">
+                                <span class="flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                                    </svg>
+                                    Verify Email
+                                </span>
+                            </a>
+                        @endif
                     @endif
-                @endif
-            @else
-                @if($book->stock_quantity > 0)
-                    <a href="{{ route('login') }}" class="login-prompt-btn">
-                        Login to Buy
-                    </a>
-                @endif
-            @endauth
-        </div>
+                @else
+                    @if($book->stock_quantity > 0)
+                        <a href="{{ route('login') }}" class="login-prompt-btn">Login to Buy</a>
+                    @endif
+                @endauth
+            </div>
+        @endif
     </div>
 </div>

@@ -30,15 +30,19 @@ class ProcessOrderExport implements ShouldQueue
     
     public function handle(OrderExportService $exportService)
     {
+        $export = ExportLog::find($this->exportId);
+        if (!$export) {
+            return;
+        }
+
         $filePath = $exportService->exportOrders(
             $this->exportId,
             $this->filters,
             $this->format,
-            auth()->id()
+            $export->user_id
         );
         
         // Send email notification
-        $export = ExportLog::find($this->exportId);
         if ($export && $export->user) {
             Mail::to($export->user->email)->send(new ExportReadyMail($export));
         }

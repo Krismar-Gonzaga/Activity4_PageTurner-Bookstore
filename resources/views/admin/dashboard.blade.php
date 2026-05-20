@@ -1,10 +1,16 @@
 @extends('layouts.app')
 
+@section('header')
+<div class="max-w-7xl mx-auto">
+    <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">Admin Dashboard</h1>
+    <p class="text-white/70 text-sm md:text-base">Overview of your bookstore at a glance</p>
+</div>
+@endsection
+
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-8">Admin Dashboard</h1>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+<div class="space-y-8">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <!-- Stats Cards -->
         <div class="bg-white rounded-lg shadow p-6">
             <h3 class="text-gray-500 text-sm">Total Books</h3>
@@ -25,9 +31,83 @@
             <h3 class="text-gray-500 text-sm">Categories</h3>
             <p class="text-3xl font-bold">{{ $stats['total_categories'] }}</p>
         </div>
+
+        <!-- Backup Health Card -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-gray-500 text-sm">Backup Status</h3>
+            <p class="text-lg font-bold {{ $stats['backup_health']['health_status'] === 'healthy' ? 'text-green-600' : 'text-yellow-600' }}">
+                {{ ucfirst($stats['backup_health']['health_status'] ?? 'Unknown') }}
+            </p>
+            <a href="{{ route('admin.backups.index') }}" class="text-xs text-blue-600 hover:underline">Manage Backups</a>
+        </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    {{-- ── AI Sales Prediction Quick Preview ─────────────────────────────────-- --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="{{ route('admin.predictions.index', ['status' => 'critical']) }}"
+            class="bg-white rounded-xl shadow-sm border border-red-200 p-5 hover:shadow-md transition-all group">
+            <div class="flex items-center justify-between mb-1">
+                <p class="text-xs uppercase tracking-wider text-red-500 font-semibold">Critical</p>
+                <svg class="w-4 h-4 text-red-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+            <p class="text-2xl font-bold text-red-600">
+                @foreach(\App\Models\SalesPrediction::critical()->get() as $p){{ $loop->index }}@endforeach
+            </p>
+            <p class="text-xs text-gray-400 mt-1">
+                @php $criticalCount = \App\Models\SalesPrediction::critical()->count(); @endphp
+                {{ $criticalCount }} {{ \Illuminate\Support\Str::plural('book', $criticalCount) }} out of stock or below lead time
+            </p>
+        </a>
+
+        <a href="{{ route('admin.predictions.index', ['status' => 'reorder_now']) }}"
+            class="bg-white rounded-xl shadow-sm border border-orange-200 p-5 hover:shadow-md transition-all group">
+            <div class="flex items-center justify-between mb-1">
+                <p class="text-xs uppercase tracking-wider text-orange-500 font-semibold">Reorder Now</p>
+                <svg class="w-4 h-4 text-orange-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+            <p class="text-2xl font-bold text-orange-600">
+                @php $rnCount = \App\Models\SalesPrediction::reorderNow()->count(); @endphp
+                {{ $rnCount }}
+            </p>
+            <p class="text-xs text-gray-400 mt-1">Books below reorder point</p>
+        </a>
+
+        <a href="{{ route('admin.predictions.index', ['status' => 'watch']) }}"
+            class="bg-white rounded-xl shadow-sm border border-amber-200 p-5 hover:shadow-md transition-all group">
+            <div class="flex items-center justify-between mb-1">
+                <p class="text-xs uppercase tracking-wider text-amber-600 font-semibold">Watch List</p>
+                <svg class="w-4 h-4 text-amber-500 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+            <p class="text-2xl font-bold text-amber-600">
+                @php $wCount = \App\Models\SalesPrediction::watch()->count(); @endphp
+                {{ $wCount }}
+            </p>
+            <p class="text-xs text-gray-400 mt-1">Books approaching threshold</p>
+        </a>
+
+        <a href="{{ route('admin.predictions.index') }}"
+            class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-all group">
+            <div class="flex items-center justify-between mb-1">
+                <p class="text-xs uppercase tracking-wider text-gray-500 font-semibold">AI Predictions</p>
+                <svg class="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <p class="text-2xl font-bold" style="color: var(--pageturner-primary);">
+                @php $tracked = \App\Models\SalesPrediction::count(); @endphp
+                {{ $tracked }}
+            </p>
+            <p class="text-xs text-gray-400 mt-1">Books tracked · View full report</p>
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
         <!-- Recent Orders -->
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-xl font-bold mb-4">Recent Orders</h2>
@@ -66,10 +146,9 @@
                 @endforeach
             </div>
         </div>
-    </div>
+</div>
 
-    
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
         <!-- Recent Reviews -->
         <div class="bg-white rounded-lg shadow p-6">
             <h2 class="text-xl font-bold mb-4">Recent Reviews</h2>
@@ -111,11 +190,36 @@
                     <p class="text-gray-500 text-center py-4">No reviews yet</p>
                 @endforelse
             </div>
-            
-            
         </div>
         
-        
+        <!-- Recent Audit Logs -->
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Recent Activity</h2>
+                <a href="{{ route('admin.audit-logs.index') }}" class="text-blue-600 hover:text-blue-900 text-sm">
+                    View All →
+                </a>
+            </div>
+            <div class="space-y-4">
+                @forelse($stats['recent_audit_logs'] as $log)
+                    <div class="flex justify-between items-center border-b pb-2">
+                        <div>
+                            <p class="font-medium">
+                                {{ $log->user->name ?? 'System' }}
+                            </p>
+                            <p class="text-sm text-gray-600">
+                                {{ ucfirst(str_replace('_', ' ', $log->event)) }}
+                            </p>
+                        </div>
+                        <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-800">
+                            {{ $log->created_at->diffForHumans() }}
+                        </span>
+                    </div>
+                @empty
+                    <p class="text-gray-500 text-center py-4">No activity yet</p>
+                @endforelse
+            </div>
+        </div>
     </div>
 </div>
 @endsection

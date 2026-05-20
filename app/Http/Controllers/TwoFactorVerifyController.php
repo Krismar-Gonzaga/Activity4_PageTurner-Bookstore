@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Session;
 use App\Models\User;
 use App\Mail\TwoFactorOTP;
 use App\Notifications\NewDeviceLoginNotification;
+use App\Services\AuditLogService;
 
 class TwoFactorVerifyController extends Controller
 {
@@ -125,6 +126,8 @@ class TwoFactorVerifyController extends Controller
     {
         // Log the user in
         Auth::login($user, $remember);
+        
+        AuditLogService::logLogin($user, true);
 
         $this->checkNewDeviceAndNotify($user, $request);
 

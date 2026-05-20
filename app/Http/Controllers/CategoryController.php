@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Category;
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
@@ -27,6 +28,14 @@ class CategoryController extends Controller
         
         Category::create($validated);
         
+        AuditLogService::log(
+            'category_created',
+            Category::class,
+            null,
+            null,
+            $validated
+        );
+
         return redirect()->route('categories.index')
             ->with('success', 'Category created successfully!');
     }

@@ -11,7 +11,7 @@ class CategoryFactory extends Factory {
         ];
 
         return [
-            'name' => fake()->unique()->randomElement($categories),
+            'name' => fake()->randomElement($categories),
             'description' => fake()->paragraph(),
         ];
     }

@@ -33,7 +33,7 @@ class ProcessBookExport implements ShouldQueue
         }
 
         try {
-            $filePath = $exportService->export(
+            $exportService->export(
                 $this->exportId,
                 $export->filters,
                 $export->selected_fields,
@@ -41,15 +41,8 @@ class ProcessBookExport implements ShouldQueue
                 $export->user_id
             );
             
-            // Generate filename for download
-            $filename = 'books_export_' . date('Ymd_His') . '.' . $export->format;
-            $export->update([
-                'filename' => $filename,
-                'file_path' => $filePath
-            ]);
-            
         } catch (\Exception $e) {
-            Log::error("Export failed: {$e->getMessage()}");
+            Log::error("Export failed for job {$this->exportId}: {$e->getMessage()}");
             $export->update([
                 'status' => 'failed',
                 'error_message' => $e->getMessage()

@@ -13,6 +13,7 @@ use App\Mail\TwoFactorOTP;
 use Illuminate\Support\Str;
 use App\Notifications\TwoFactorEnabledNotification;
 use App\Notifications\TwoFactorDisabledNotification;
+use App\Services\AuditLogService;
 
 class TwoFactorController extends Controller
 {
@@ -117,6 +118,8 @@ class TwoFactorController extends Controller
 
             $user->notify(new TwoFactorEnabledNotification('app'));
 
+            AuditLogService::logTwoFactorEnable($user, 'app');
+
             session()->forget('2fa_setup');
 
             return view('profile.two-factor-recovery-codes', compact('recoveryCodes'));
@@ -156,6 +159,8 @@ class TwoFactorController extends Controller
 
             $user->notify(new TwoFactorEnabledNotification($setup['type']));
 
+            AuditLogService::logTwoFactorEnable($user, $setup['type']);
+
             session()->forget('2fa_setup');
 
             return view('profile.two-factor-recovery-codes', compact('recoveryCodes'));
@@ -180,6 +185,8 @@ class TwoFactorController extends Controller
             'two_factor_enabled' => false,
             'two_factor_type' => null
         ]);
+
+        AuditLogService::logTwoFactorDisable($user);
 
         $user->notify(new TwoFactorDisabledNotification());
 

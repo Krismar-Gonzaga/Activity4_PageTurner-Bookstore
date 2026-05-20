@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Models\AuditLog;
 use App\Models\Order;
+use App\Policies\AuditLogPolicy;
 use App\Policies\OrderPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 
@@ -14,6 +16,7 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
+        AuditLog::class => AuditLogPolicy::class,
         Order::class => OrderPolicy::class,
     ];
 

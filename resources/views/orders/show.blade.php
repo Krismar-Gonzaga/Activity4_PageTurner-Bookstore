@@ -427,14 +427,17 @@
                 </div>
             @endif
         </div>
-        <div class="header-actions">
-        <button onclick="showExportModal()" class="action-btn secondary">
-            <svg class="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-            </svg>
-            Export Orders
-        </button>
-    </div>
+        <div class="mt-6 flex flex-wrap gap-3">
+            <a href="{{ route('my-orders.export', ['format' => 'pdf']) }}" class="btn-secondary">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+                Export My Order History (PDF Invoice)
+            </a>
+            @if(auth()->user()->isAdmin())
+                <a href="{{ route('admin.orders.export.index') }}" class="btn-secondary">Open Admin Export Dashboard</a>
+            @endif
+        </div>
     </div>
 
     <!-- Action Buttons -->

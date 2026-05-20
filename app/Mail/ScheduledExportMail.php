@@ -2,52 +2,36 @@
 
 namespace App\Mail;
 
+use App\Models\ScheduledExport;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
-use Illuminate\Mail\Mailables\Content;
-use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\File;
 
 class ScheduledExportMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    /**
-     * Create a new message instance.
-     */
-    public function __construct()
+    public $scheduledExport;
+    public $generatedAt;
+    protected $filePath;
+
+    public function __construct(ScheduledExport $scheduledExport, string $filePath)
     {
-        //
+        $this->scheduledExport = $scheduledExport;
+        $this->filePath = $filePath;
+        $this->generatedAt = now()->format('F j, Y g:i A');
     }
 
-    /**
-     * Get the message envelope.
-     */
-    public function envelope(): Envelope
+    public function build()
     {
-        return new Envelope(
-            subject: 'Scheduled Export Mail',
-        );
-    }
+        $mail = $this->subject("Scheduled Export: {$this->scheduledExport->name}")
+            ->view('emails.scheduled-export');
 
-    /**
-     * Get the message content definition.
-     */
-    public function content(): Content
-    {
-        return new Content(
-            view: 'view.name',
-        );
-    }
+        if (File::exists($this->filePath)) {
+            $mail->attach($this->filePath);
+        }
 
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
-    public function attachments(): array
-    {
-        return [];
+        return $mail;
     }
 }

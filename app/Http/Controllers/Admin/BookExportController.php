@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\ExportJob;
 use App\Services\BookExportService;
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use App\Jobs\ProcessBookExport;
@@ -60,6 +61,11 @@ class BookExportController extends Controller
         // Dispatch job for async processing
         ProcessBookExport::dispatch($exportJob->id);
 
+        AuditLogService::logExport($exportJob, [
+            'format' => $request->format,
+            'fields' => $request->fields
+        ]);
+
         return response()->json([
             'success' => true,
             'export_id' => $exportJob->id,
@@ -87,14 +93,24 @@ class BookExportController extends Controller
     public function download($id)
     {
         $export = ExportJob::where('user_id', auth()->id())
-            ->where('status', 'completed')
             ->findOrFail($id);
 
-        if (!file_exists($export->file_path)) {
-            abort(404, 'Export file not found');
+        // Check status
+        if ($export->status !== 'completed') {
+            abort(404, "Export not ready. Status: {$export->status}");
         }
 
-        return response()->download($export->file_path, $export->filename ?? 'export.' . $export->format);
+        $filePath = $export->file_path;
+        
+        // Normalize path separators for Windows
+        $filePath = str_replace('/', DIRECTORY_SEPARATOR, $filePath);
+        
+        // Check if file exists
+        if (empty($filePath) || !file_exists($filePath)) {
+            abort(404, "Export file not found at path: " . $filePath);
+        }
+
+        return response()->download($filePath, $export->filename ?? 'export.' . $export->format);
     }
 
     public function getExports()

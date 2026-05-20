@@ -3,16 +3,18 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Book;
 use App\Models\Order;
 use App\Models\User;
 use App\Models\Category;
 use App\Models\Review;
+use App\Services\BackupService;
 use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(BackupService $backupService)
     {
         $stats = [
             'total_books' => Book::count(),
@@ -29,7 +31,12 @@ class DashboardController extends Controller
                                 ->get(),
             'recent_users' => User::latest()
                                 ->take(5)
-                                ->get()
+                                ->get(),
+            'recent_audit_logs' => AuditLog::with('user')
+                                ->latest()
+                                ->take(5)
+                                ->get(),
+            'backup_health' => $backupService->getBackupHealth(),
         ];
 
         return view('admin.dashboard', compact('stats'));

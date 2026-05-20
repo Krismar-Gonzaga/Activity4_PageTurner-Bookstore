@@ -1,5 +1,4 @@
 <?php
-// app/Services/BookImportService.php
 
 namespace App\Services;
 
@@ -7,6 +6,8 @@ use App\Models\Book;
 use App\Models\Category;
 use App\Models\BookImport;
 use App\Models\BookImportError;
+use App\Imports\BooksImport;
+use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -14,23 +15,41 @@ use Illuminate\Support\Facades\Storage;
 class BookImportService
 {
     protected $chunkSize = 1000;
-    protected $validCategories = [];
 
-    public function __construct()
+    public function import($importId, $filePath, $duplicateAction = 'skip')
     {
-        $this->validCategories = Category::pluck('id', 'name')->toArray();
+        $import = BookImport::find($importId);
+        $import->update(['status' => 'processing']);
+
+        try {
+            Excel::filter('chunk')->import(new BooksImport($importId, $duplicateAction), $filePath);
+
+            Storage::delete($filePath);
+
+            return true;
+        } catch (\Exception $e) {
+            $import->update([
+                'status' => 'failed',
+                'errors' => ['message' => $e->getMessage()]
+            ]);
+            Log::error('Import failed: ' . $e->getMessage());
+            throw $e;
+        }
     }
 
-    public function validateHeaders($headers, $requiredHeaders = [
-        'ISBN', 'Title', 'Author', 'Price', 'Stock', 'Category', 'Description'
-    ])
+    public function processImport($importId, $filePath, $duplicateAction = 'skip')
+    {
+        return $this->import($importId, $filePath, $duplicateAction);
+    }
+
+    public function validateHeaders($headers, $requiredHeaders = ['ISBN', 'Title', 'Author', 'Price', 'Stock', 'Category', 'Description'])
     {
         $missingHeaders = array_diff($requiredHeaders, $headers);
-        
+
         if (!empty($missingHeaders)) {
             throw new \Exception('Missing required headers: ' . implode(', ', $missingHeaders));
         }
-        
+
         return true;
     }
 
@@ -38,30 +57,25 @@ class BookImportService
     {
         $errors = [];
 
-        // ISBN Validation (ISBN-10 or ISBN-13)
         if (empty($bookData['ISBN'])) {
             $errors[] = 'ISBN is required';
         } else {
             $isbn = preg_replace('/[^0-9xX]/', '', $bookData['ISBN']);
-            if (!preg_match('/^(\d{10}|\d{13})$/i', $isbn) && 
-                !preg_match('/^\d{9}[\dXx]$/', $isbn)) {
+            if (!preg_match('/^(\d{10}|\d{13})$/i', $isbn) && !preg_match('/^\d{9}[\dXx]$/', $isbn)) {
                 $errors[] = 'Invalid ISBN format. Must be ISBN-10 or ISBN-13';
             }
         }
 
-        // Title Validation
         if (empty($bookData['Title'])) {
             $errors[] = 'Title is required';
         } elseif (strlen($bookData['Title']) > 255) {
             $errors[] = 'Title must not exceed 255 characters';
         }
 
-        // Author Validation
         if (empty($bookData['Author'])) {
             $errors[] = 'Author is required';
         }
 
-        // Price Validation
         if (empty($bookData['Price'])) {
             $errors[] = 'Price is required';
         } elseif (!is_numeric($bookData['Price'])) {
@@ -72,7 +86,6 @@ class BookImportService
             $errors[] = 'Price cannot exceed 9999.99';
         }
 
-        // Stock Validation
         if (!isset($bookData['Stock']) || $bookData['Stock'] === '') {
             $errors[] = 'Stock is required';
         } elseif (!is_numeric($bookData['Stock']) || !ctype_digit((string)$bookData['Stock'])) {
@@ -81,14 +94,13 @@ class BookImportService
             $errors[] = 'Stock cannot be negative';
         }
 
-        // Category Validation
+        $validCategories = Category::pluck('id', 'name')->toArray();
         if (empty($bookData['Category'])) {
             $errors[] = 'Category is required';
-        } elseif (!isset($this->validCategories[$bookData['Category']])) {
+        } elseif (!isset($validCategories[$bookData['Category']])) {
             $errors[] = 'Category "' . $bookData['Category'] . '" does not exist';
         }
 
-        // Description Validation (optional)
         if (!empty($bookData['Description']) && strlen($bookData['Description']) > 5000) {
             $errors[] = 'Description must not exceed 5000 characters';
         }
@@ -100,159 +112,21 @@ class BookImportService
         ];
     }
 
-    public function processImport($importId, $filePath, $duplicateAction = 'skip')
+    public function downloadTemplate()
     {
-        $import = BookImport::find($importId);
-        $import->update(['status' => 'processing']);
+        $headers = ['ISBN', 'Title', 'Author', 'Price', 'Stock', 'Category', 'Description'];
+        $callback = function () use ($headers) {
+            $file = fopen('php://output', 'w');
+            fwrite($file, "\xEF\xBB\xBF");
+            fputcsv($file, $headers);
+            fputcsv($file, ['9780141182636', 'The Great Gatsby', 'F. Scott Fitzgerald', '12.99', '10', 'Fiction', 'A classic novel about the Jazz Age']);
+            fputcsv($file, ['9780451524935', '1984', 'George Orwell', '9.99', '5', 'Fiction', 'A dystopian social science fiction novel']);
+            fclose($file);
+        };
 
-        try {
-            $data = $this->readFile($filePath);
-            $totalRows = count($data);
-            $import->update(['total_rows' => $totalRows]);
-
-            $successfulRows = 0;
-            $failedRows = 0;
-            $processedRows = 0;
-
-            // Process in chunks
-            $chunks = array_chunk($data, $this->chunkSize);
-            
-            foreach ($chunks as $chunkIndex => $chunk) {
-                DB::beginTransaction();
-                
-                foreach ($chunk as $rowIndex => $row) {
-                    $rowNumber = $rowIndex + 2; // +2 for header row and 1-based index
-                    
-                    $validation = $this->validateBook($row, $rowNumber);
-                    
-                    if (!$validation['valid']) {
-                        $failedRows++;
-                        BookImportError::create([
-                            'book_import_id' => $importId,
-                            'row_number' => $rowNumber,
-                            'row_data' => $row,
-                            'errors' => $validation['errors']
-                        ]);
-                        continue;
-                    }
-
-                    try {
-                        $this->saveBook($validation['data'], $duplicateAction);
-                        $successfulRows++;
-                    } catch (\Exception $e) {
-                        $failedRows++;
-                        BookImportError::create([
-                            'book_import_id' => $importId,
-                            'row_number' => $rowNumber,
-                            'row_data' => $row,
-                            'errors' => [$e->getMessage()]
-                        ]);
-                    }
-                    
-                    $processedRows++;
-                    $import->update([
-                        'processed_rows' => $processedRows,
-                        'successful_rows' => $successfulRows,
-                        'failed_rows' => $failedRows
-                    ]);
-                }
-                
-                DB::commit();
-            }
-
-            $import->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-                'successful_rows' => $successfulRows,
-                'failed_rows' => $failedRows
-            ]);
-
-            Storage::delete($filePath);
-            
-            return true;
-        } catch (\Exception $e) {
-            $import->update([
-                'status' => 'failed',
-                'errors' => ['message' => $e->getMessage()]
-            ]);
-            throw $e;
-        }
-    }
-
-    protected function readFile($filePath)
-    {
-        $extension = pathinfo($filePath, PATHINFO_EXTENSION);
-        
-        if ($extension === 'csv') {
-            return $this->readCSV($filePath);
-        } elseif ($extension === 'xlsx') {
-            return $this->readExcel($filePath);
-        }
-        
-        throw new \Exception('Unsupported file format');
-    }
-
-    protected function readCSV($filePath)
-    {
-        $data = [];
-        if (($handle = fopen(storage_path('app/' . $filePath), 'r')) !== false) {
-            $headers = fgetcsv($handle);
-            $this->validateHeaders($headers);
-            
-            while (($row = fgetcsv($handle)) !== false) {
-                $data[] = array_combine($headers, $row);
-            }
-            fclose($handle);
-        }
-        return $data;
-    }
-
-    protected function readExcel($filePath)
-    {
-        require_once app_path('Helpers/PhpSpreadsheet/autoload.php');
-        
-        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(storage_path('app/' . $filePath));
-        $worksheet = $spreadsheet->getActiveSheet();
-        $rows = $worksheet->toArray();
-        
-        $headers = array_shift($rows);
-        $this->validateHeaders($headers);
-        
-        $data = [];
-        foreach ($rows as $row) {
-            if (!empty(array_filter($row))) {
-                $data[] = array_combine($headers, $row);
-            }
-        }
-        
-        return $data;
-    }
-
-    protected function saveBook($bookData, $duplicateAction)
-    {
-        $categoryId = $this->validCategories[$bookData['Category']];
-        
-        $existingBook = Book::where('isbn', $bookData['ISBN'])->first();
-        
-        if ($existingBook && $duplicateAction === 'skip') {
-            throw new \Exception('Duplicate ISBN. Book already exists.');
-        }
-        
-        $bookAttributes = [
-            'category_id' => $categoryId,
-            'title' => trim($bookData['Title']),
-            'author' => trim($bookData['Author']),
-            'isbn' => preg_replace('/[^0-9xX]/', '', $bookData['ISBN']),
-            'price' => (float)$bookData['Price'],
-            'stock_quantity' => (int)$bookData['Stock'],
-            'description' => $bookData['Description'] ?? null,
-        ];
-        
-        if ($existingBook && $duplicateAction === 'update') {
-            $existingBook->update($bookAttributes);
-            return $existingBook;
-        }
-        
-        return Book::create($bookAttributes);
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="book_import_template.csv"'
+        ]);
     }
 }

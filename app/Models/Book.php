@@ -2,6 +2,7 @@
 namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\SalesPrediction;
 
 class Book extends Model{
     use HasFactory;
@@ -14,10 +15,16 @@ class Book extends Model{
         'stock_quantity',
         'description',
         'cover_image',
-        'pages',          
-        'publisher',      
-        'language',       
-        'published_year',  
+        'pages',
+        'publisher',
+        'language',
+        'published_year',
+        // AI columns
+        'ai_audio_description',
+        'ai_description_at',
+    ];
+    protected $casts = [
+        'ai_description_at' => 'datetime',
     ];
 
     public function category()
@@ -37,5 +44,10 @@ class Book extends Model{
     {
         return $this->reviews()->avg('rating') ?? 0;
 
+    }
+
+    public function salesPrediction()
+    {
+        return $this->hasOne(SalesPrediction::class);
     }
 }

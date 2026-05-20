@@ -94,7 +94,7 @@
             
             <input type="file" 
                    ref="fileInput"
-                   accept=".csv,.xlsx"
+                   accept=".csv,.txt,.xlsx"
                    class="hidden"
                    @change="handleFileSelect($event)">
             
@@ -106,7 +106,7 @@
             <p class="mt-2 text-sm text-gray-600">
                 <span class="font-semibold">Click to upload</span> or drag and drop
             </p>
-            <p class="text-xs text-gray-500">CSV or Excel (XLSX) files, max 10MB</p>
+            <p class="text-xs text-gray-500">CSV, TXT, or Excel (XLSX) files, max 10MB</p>
         </div>
         
         <div class="mt-4" x-show="selectedFile">
@@ -239,9 +239,19 @@ function bookImport() {
         },
         
         processFile(file) {
-            const validTypes = ['text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
-            if (!validTypes.includes(file.type)) {
-                alert('Please upload a CSV or Excel file');
+            const fileName = file.name ? file.name.toLowerCase() : '';
+            const hasValidExtension = fileName.endsWith('.csv') || fileName.endsWith('.txt') || fileName.endsWith('.xlsx');
+            const validTypes = [
+                'text/csv',
+                'application/csv',
+                'text/plain',
+                'application/vnd.ms-excel',
+                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                ''
+            ];
+
+            if (!hasValidExtension && !validTypes.includes(file.type)) {
+                alert('Please upload a CSV, TXT, or XLSX file');
                 return;
             }
             

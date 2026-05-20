@@ -166,9 +166,12 @@ class BookExportService
         $records = $query->get();
         $filePath = $this->generateFile($records, $selectedFields, $format, $export->id);
         
+        $filename = 'books_export_' . date('Ymd_His') . '.' . $format;
+        
         $export->update([
             'status' => 'completed',
             'file_path' => $filePath,
+            'filename' => $filename,
             'completed_at' => now(),
             'processed_records' => $records->count()
         ]);
@@ -179,7 +182,7 @@ class BookExportService
     protected function processLargeExport($export, $query, $selectedFields, $format)
     {
         // Process in chunks
-        $filePath = storage_path("app/exports/temp_{$export->id}.{$format}");
+        $filePath = storage_path('app/exports/temp_' . $export->id . '.' . $format);
         $firstChunk = true;
         $processedCount = 0;
 
@@ -194,9 +197,18 @@ class BookExportService
             ]);
         });
 
+        // Finalize the temp CSV to proper format for xlsx/csv
+        $tempFile = $filePath . '.tmp';
+        if (file_exists($tempFile)) {
+            rename($tempFile, $filePath);
+        }
+
+        $filename = 'books_export_' . date('Ymd_His') . '.' . $format;
+        
         $export->update([
             'status' => 'completed',
             'file_path' => $filePath,
+            'filename' => $filename,
             'completed_at' => now()
         ]);
 
@@ -249,7 +261,7 @@ class BookExportService
         }
 
         $filename = "export_{$exportId}_" . date('Ymd_His') . ".{$format}";
-        $filepath = $directory . '/' . $filename;
+        $filepath = $directory . DIRECTORY_SEPARATOR . $filename;
 
         // Write file based on format
         switch ($format) {

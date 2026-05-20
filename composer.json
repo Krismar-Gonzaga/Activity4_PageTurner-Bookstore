@@ -10,12 +10,18 @@
         "bacon/bacon-qr-code": "^3.0",
         "dasprid/enum": "^1.0",
         "dompdf/dompdf": "^3.1",
+        "google/apiclient": "*",
+        "guzzlehttp/guzzle": "*",
         "jenssegers/agent": "^2.6",
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "laravel/ui": "^4.6",
+        "maatwebsite/excel": "^3.1",
+        "openai-php/client": "*",
+        "phpoffice/phpspreadsheet": "^5.7",
         "pragmarx/google2fa": "^9.0",
-        "pragmarx/google2fa-laravel": "^2.3"
+        "pragmarx/google2fa-laravel": "^2.3",
+        "spatie/laravel-backup": "^9.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

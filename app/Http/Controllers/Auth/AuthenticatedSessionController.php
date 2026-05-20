@@ -13,6 +13,7 @@ use App\Mail\TwoFactorOTP;
 use Illuminate\Support\Facades\Mail;
 
 use App\Notifications\NewDeviceLoginNotification;
+use App\Services\AuditLogService;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -39,21 +40,6 @@ class AuthenticatedSessionController extends Controller
 
         
 
-        // Check for trusted device cookie
-        if ($request->cookie('2fa_trust')) {
-            $trustData = cache()->get("2fa_trust:{$request->cookie('2fa_trust')}");
-            
-            if ($trustData && 
-                $trustData['user_id'] === $user->id && 
-                $trustData['ip'] === $request->ip() && 
-                $trustData['user_agent'] === $request->userAgent()) {
-                // Device is trusted, bypass 2FA
-                Auth::login($user, $remember);
-                $request->session()->regenerate();
-                return redirect()->route('home');
-            }
-        }
-
         if (Auth::validate($credentials)) {
             $user = Auth::getProvider()->retrieveByCredentials($credentials);
 
@@ -76,6 +62,8 @@ class AuthenticatedSessionController extends Controller
             // No 2FA, log them in directly
             Auth::login($user, $remember);
             $request->session()->regenerate();
+            
+            AuditLogService::logLogin($user, true);
 
             // Send new device notification (optional for trusted devices)
             $this->sendNewDeviceNotification($user, $request);
@@ -83,6 +71,8 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('home');
         }
 
+        AuditLogService::logLogin(null, false);
+        
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
         ])->onlyInput('email');
@@ -131,11 +121,13 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
+
+        AuditLogService::logLogout($user);
 
         return redirect('/');
     }

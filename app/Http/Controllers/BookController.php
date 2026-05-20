@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Book;
 use App\Models\Category;
+use App\Services\AuditLogService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB; 
 
@@ -108,11 +109,12 @@ class BookController extends Controller
             'total_stock' => Book::sum('stock_quantity'),
             'low_stock_count' => Book::whereBetween('stock_quantity', [1, 5])->count(),
             'out_of_stock_count' => Book::where('stock_quantity', 0)->count(),
-            'total_value' => Book::sum(\DB::raw('price * stock_quantity')),
+            'total_value' => Book::sum(DB::raw('price * stock_quantity')),
             'total_categories' => Category::count(),
         ];
         
-        return view('books.index', compact('books', 'categories', 'stats'));    
+        return view('books.index', compact('books', 'categories', 'stats'))
+            ->with('openaiConfigured', ! empty(env('OPENAI_API_KEY')) && env('OPENAI_API_KEY') !== 'sk-your-openai-key-here');    
     }
 
     public function create()
@@ -144,6 +146,14 @@ class BookController extends Controller
         
         Book::create($validated);
         
+        AuditLogService::log(
+            'book_created',
+            Book::class,
+            null,
+            null,
+            $validated
+        );
+
         return redirect()->route('books.index')
             ->with('success', 'Book added successfully!');
     }
@@ -181,16 +191,35 @@ class BookController extends Controller
             $validated['cover_image'] = $request->file('cover_image')->store('covers', 'public');
         }
         
+        $oldValues = $book->toArray();
         $book->update($validated);
         
+        AuditLogService::log(
+            'book_updated',
+            Book::class,
+            $book->id,
+            $oldValues,
+            $book->fresh()->toArray()
+        );
+
         return redirect()->route('books.show', $book)
             ->with('success', 'Book updated successfully!');
     }
 
     public function destroy(Book $book)
     {
+        $bookData = $book->toArray();
+        $bookId = $book->id;
         $book->delete();
         
+        AuditLogService::log(
+            'book_deleted',
+            Book::class,
+            $bookId,
+            $bookData,
+            null
+        );
+
         return redirect()->route('books.index')
             ->with('success', 'Book deleted successfully!');
     }

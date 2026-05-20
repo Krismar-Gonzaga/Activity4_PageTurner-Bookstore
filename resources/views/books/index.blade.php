@@ -1,1080 +1,395 @@
+{{-- resources/views/books/index.blade.php --}}
+{{-- Replaces the vanilla book listing with an AI-voice-search-enhanced browse page --}}
 @extends('layouts.app')
 
-@section('title', 'All Books - PageTurner')
-
-@section('header')
-    <div class="books-header">
-        <div>
-            <h1 class="books-title">Browse Books</h1>
-            <p class="books-subtitle">Discover our collection of {{ $books->total() }} books</p>
-        </div>
-        @auth
-            @if(auth()->user()->isAdmin())
-                <a href="{{ route('admin.books.create') }}" class="admin-add-btn">
-                    <svg class="admin-add-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                    </svg>
-                    Add New Book
-                </a>
-            @endif
-        @endauth
-    </div>
-@endsection
+@section('title', 'Browse Books – PageTurner')
 
 @section('content')
 <style>
-    :root {
-        --pageturner-primary: #8B4513;
-        --pageturner-secondary: #D2691E;
-        --pageturner-accent: #F4A460;
-        --pageturner-light: #F5EBDC;
-        --pageturner-very-light: #FDF8F0;
-        --pageturner-dark: #5D4037;
-        --pageturner-text: #3E2723;
-    }
-
-    /* Main Container with Left/Right Margins */
-    .main-container {
-        max-width: 1440px;
-        margin-left: -3rem;
-        
-        
-    }
-
-    @media (min-width: 640px) {
-        .main-container {
-            
-        }
-    }
-
-    @media (min-width: 1024px) {
-        .main-container {
-            
-            
-        }
-    }
-
-    @media (min-width: 1440px) {
-        .main-container {
-            
-           
-        }
-    }
-
-    /* Header Styles */
-    .books-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .books-title {
-        font-size: 1.875rem;
-        font-weight: 700;
-        font-family: 'Playfair Display', Georgia, serif;
-        color: var(--pageturner-light);
-    }
-
-    .books-subtitle {
-        color: rgba(255, 255, 255, 0.8);
-        margin-top: 0.5rem;
-    }
-
-    .admin-add-btn {
-        background: #8B4513;
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 0.375rem;
-        transition: background-color 0.3s;
-        display: flex;
-        align-items: center;
-        text-decoration: none;
-    }
-
-    .admin-add-btn:hover {
-        background: #D2691E;
-    }
-
-    .admin-add-icon {
-        width: 1.25rem;
-        height: 1.25rem;
-        margin-right: 0.5rem;
-    }
-
-    /* Filter Section */
-    .filter-section {
-        background: var(--pageturner-very-light);
-        padding: 1.5rem;
-        border-radius: 0.75rem;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-        border: 1px solid rgba(139,69,19,0.12);
-        margin-bottom: 2rem;
-    }
-
-    /* Horizontal Filter Layout */
-    .filter-form {
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    .filter-row {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    @media (min-width: 768px) {
-        .filter-row {
-            flex-direction: row;
-            gap: 1rem;
-        }
-    }
-
-    .search-wrapper {
-        flex: 1;
-    }
-
-    .search-input-container {
-        position: relative;
-    }
-
-    .search-icon {
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        padding-left: 0.75rem;
-        display: flex;
-        align-items: center;
-        pointer-events: none;
-    }
-
-    .search-icon-svg {
-        height: 1.25rem;
-        width: 1.25rem;
-        color: #9ca3af;
-    }
-
-    .search-input {
-        padding-left: 2.5rem;
-        width: 100%;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.375rem;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        transition: all 0.3s;
-        height: 2.5rem;
-    }
-
-    .search-input:focus {
-        outline: none;
-        box-shadow: 0 0 0 2px var(--pageturner-accent);
-        border-color: var(--pageturner-primary);
-    }
-
-    /* Filter Selects */
-    .filter-select {
-        width: 100%;
-        border: 1px solid #e5e7eb;
-        border-radius: 0.375rem;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        transition: all 0.3s;
-        height: 2.5rem;
-        padding: 0 0.75rem;
-    }
-
-    @media (min-width: 768px) {
-        .filter-select {
-            width: 16rem;
-        }
-    }
-
-    .filter-select:focus {
-        outline: none;
-        box-shadow: 0 0 0 2px var(--pageturner-accent);
-        border-color: var(--pageturner-primary);
-    }
-
-    .filter-select.small {
-        width: 100%;
-    }
-
-    @media (min-width: 768px) {
-        .filter-select.small {
-            width: 12rem;
-        }
-    }
-
-    /* Advanced Filters Toggle */
-    .advanced-toggle {
-        color: #8B4513;
-        font-size: 0.875rem;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        background: none;
-        border: none;
-        cursor: pointer;
-    }
-
-    .advanced-toggle:hover {
-        color: #D2691E;
-    }
-
-    .toggle-icon {
-        width: 1rem;
-        height: 1rem;
-        margin-left: 0.25rem;
-        transition: transform 0.2s;
-    }
-
-    .toggle-icon.rotated {
-        transform: rotate(180deg);
-    }
-
-    /* Advanced Filters Panel */
-    .advanced-panel {
-        margin-top: 1rem;
-        padding-top: 1rem;
-        border-top: 1px solid #e5e7eb;
-    }
-
-    .advanced-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
-    @media (min-width: 768px) {
-        .advanced-grid {
-            grid-template-columns: repeat(3, 1fr);
-        }
-    }
-
-    /* Checkbox Styles */
-    .checkbox-group {
-        display: flex;
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .checkbox-label {
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-    }
-
-    .checkbox-input {
-        border-radius: 0.25rem;
-        border: 1px solid #d1d5db;
-        color: var(--pageturner-primary);
-    }
-
-    .checkbox-input:focus {
-        box-shadow: 0 0 0 2px var(--pageturner-primary);
-    }
-
-    .checkbox-text {
-        margin-left: 0.5rem;
-        font-size: 0.875rem;
-        color: #4b5563;
-    }
-
-    /* Filter Section Titles */
-    .filter-label {
-        display: block;
-        font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--pageturner-dark);
-        margin-bottom: 0.5rem;
-    }
-
-    /* Form Actions */
-    .form-actions {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding-top: 1rem;
-        border-top: 1px solid rgba(139,69,19,0.12);
-    }
-
-    .filter-count {
-        font-size: 0.875rem;
-        color: #6b7280;
-    }
-
-    .clear-filters {
-        color: #dc2626;
-        font-weight: 500;
-        text-decoration: none;
-    }
-
-    .clear-filters:hover {
-        color: #b91c1c;
-    }
-
-    .button-group {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .apply-btn {
-        background: var(--pageturner-primary);
-        color: white;
-        padding: 0.5rem 1.5rem;
-        border-radius: 0.375rem;
-        transition: background 0.3s;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        border: none;
-        cursor: pointer;
-    }
-
-    .apply-btn:hover {
-        background: var(--pageturner-secondary);
-    }
-
-    .apply-icon {
-        width: 1.25rem;
-        height: 1.25rem;
-        margin-right: 0.5rem;
-    }
-
-    /* Results Summary */
-    .results-summary {
-        margin-bottom: 1.5rem;
-    }
-
-    .summary-card {
-        background: var(--pageturner-light);
-        border: 1px solid var(--pageturner-accent);
-        border-radius: 0.5rem;
-        padding: 1rem;
-    }
-
-    .summary-content {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: space-between;
-    }
-
-    .summary-text {
-        font-weight: 500;
-        color: var(--pageturner-dark);
-    }
-
-    .summary-query {
-        color: #4b5563;
-        margin-left: 0.5rem;
-    }
-
-    .filter-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-top: 0.5rem;
-    }
-
-    @media (min-width: 768px) {
-        .filter-tags {
-            margin-top: 0;
-        }
-    }
-
-    .filter-tag {
-        display: inline-flex;
-        align-items: center;
-        background: var(--pageturner-accent);
-        color: var(--pageturner-dark);
-        font-size: 0.875rem;
-        padding: 0.25rem 0.75rem;
-        border-radius: 9999px;
-    }
-
-    .filter-tag.in-stock {
-        background: #d1fae5;
-        color: #065f46;
-    }
-
-    .filter-tag.rating {
-        background: #fef3c7;
-        color: #92400e;
-    }
-
-    .tag-remove {
-        margin-left: 0.5rem;
-        color: inherit;
-        text-decoration: none;
-        opacity: 0.7;
-    }
-
-    .tag-remove:hover {
-        opacity: 1;
-    }
-
-    /* Books Grid */
-    .books-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 4.0rem;
-    }
-
-    @media (min-width: 640px) {
-        .books-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-
-    @media (min-width: 768px) {
-        .books-grid {
-            grid-template-columns: repeat(3, 1fr);
-        }
-    }
-
-    @media (min-width: 1024px) {
-        .books-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
-    }
-
-    @media (min-width: 1280px) {
-        .books-grid {
-            grid-template-columns: repeat(4, 1fr);
-        }
-    }
-
-    /* Pagination */
-    .pagination-wrapper {
-        margin-top: 2rem;
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 3rem 0;
-    }
-
-    .empty-icon {
-        margin: 0 auto;
-        height: 4rem;
-        width: 4rem;
-        color: #9ca3af;
-    }
-
-    .empty-title {
-        margin-top: 1rem;
-        font-size: 1.125rem;
-        font-weight: 500;
-        color: #111827;
-    }
-
-    .empty-text {
-        margin-top: 0.5rem;
-        color: #4b5563;
-    }
-
-    .empty-action {
-        margin-top: 1.5rem;
-    }
-
-    .clear-btn {
-        display: inline-flex;
-        align-items: center;
-        padding: 0.5rem 1rem;
-        border: 1px solid transparent;
-        font-size: 0.875rem;
-        font-weight: 500;
-        border-radius: 0.375rem;
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        color: white;
-        background: #8B4513;
-        text-decoration: none;
-    }
-
-    .clear-btn:hover {
-        background: #D2691E;
-    }
-
-    /* Margin Utilities */
-    .mb-8 {
-        margin-bottom: 2rem;
-    }
-
-    .mb-6 {
-        margin-bottom: 1.5rem;
-    }
-
-    .mt-2 {
-        margin-top: 0.5rem;
-    }
-
-    .mt-4 {
-        margin-top: 1rem;
-    }
-
-    .mt-8 {
-        margin-top: 2rem;
-    }
-
-    .ml-2 {
-        margin-left: 0.5rem;
-    }
-
-    .ml-1 {
-        margin-left: 0.25rem;
-    }
-
-    .mr-2 {
-        margin-right: 0.5rem;
-    }
-
-    .mb-2 {
-        margin-bottom: 0.5rem;
-    }
-
-    .py-2 {
-        padding-top: 0.5rem;
-        padding-bottom: 0.5rem;
-    }
-
-    .px-3 {
-        padding-left: 0.75rem;
-        padding-right: 0.75rem;
-    }
-
-    .py-12 {
-        padding-top: 3rem;
-        padding-bottom: 3rem;
-    }
-
-    .pt-4 {
-        padding-top: 1rem;
-    }
-
-    .pb-4 {
-        padding-bottom: 1rem;
-    }
-
-    /* Flex Utilities */
-    .flex {
-        display: flex;
-    }
-
-    .inline-flex {
-        display: inline-flex;
-    }
-
-    .items-center {
-        align-items: center;
-    }
-
-    .justify-between {
-        justify-content: space-between;
-    }
-
-    .flex-wrap {
-        flex-wrap: wrap;
-    }
-
-    .gap-2 {
-        gap: 0.5rem;
-    }
-
-    .gap-4 {
-        gap: 1rem;
-    }
-
-    .gap-6 {
-        gap: 1.5rem;
-    }
-
-    .space-y-2 > * + * {
-        margin-top: 0.5rem;
-    }
-
-    .space-y-4 > * + * {
-        margin-top: 1rem;
-    }
-
-    .space-y-6 > * + * {
-        margin-top: 1.5rem;
-    }
-
-    /* Grid Utilities */
-    .grid {
-        display: grid;
-    }
-
-    .grid-cols-1 {
-        grid-template-columns: repeat(1, 1fr);
-    }
-
-    /* Width Utilities */
-    .w-full {
-        width: 100%;
-    }
-
-    .w-4 {
-        width: 1rem;
-    }
-
-    .w-5 {
-        width: 1.25rem;
-    }
-
-    .w-16 {
-        width: 4rem;
-    }
-
-    .h-4 {
-        height: 1rem;
-    }
-
-    .h-5 {
-        height: 1.25rem;
-    }
-
-    .h-16 {
-        height: 4rem;
-    }
-
-    /* Text Utilities */
-    .text-sm {
-        font-size: 0.875rem;
-    }
-
-    .text-lg {
-        font-size: 1.125rem;
-    }
-
-    .font-medium {
-        font-weight: 500;
-    }
-
-    .font-semibold {
-        font-weight: 600;
-    }
-
-    .text-gray-500 {
-        color: #6b7280;
-    }
-
-    .text-gray-600 {
-        color: #4b5563;
-    }
-
-    .text-gray-900 {
-        color: #111827;
-    }
-
-    .text-red-600 {
-        color: #dc2626;
-    }
-
-    .text-red-800 {
-        color: #991b1b;
-    }
-
-    .text-green-800 {
-        color: #166534;
-    }
-
-    .text-yellow-800 {
-        color: #854d0e;
-    }
-
-    .text-white {
-        color: white;
-    }
-
-    /* Background Utilities */
-    .bg-green-100 {
-        background: #dcfce7;
-    }
-
-    .bg-yellow-100 {
-        background: #fef9c3;
-    }
-
-    /* Border Utilities */
-    .border {
-        border: 1px solid;
-    }
-
-    .border-t {
-        border-top: 1px solid;
-    }
-
-    .border-gray-200 {
-        border-color: #e5e7eb;
-    }
-
-    .rounded-md {
-        border-radius: 0.375rem;
-    }
-
-    .rounded-lg {
-        border-radius: 0.5rem;
-    }
-
-    .rounded-xl {
-        border-radius: 0.75rem;
-    }
-
-    .rounded-full {
-        border-radius: 9999px;
-    }
-
-    /* Shadow */
-    .shadow-sm {
-        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    }
-
-    /* Transitions */
-    .transition-colors {
-        transition: all 0.3s;
-    }
-
-    .transition-transform {
-        transition: transform 0.2s;
-    }
-
-    .duration-200 {
-        transition-duration: 200ms;
-    }
-
-    /* Cursor */
-    .cursor-pointer {
-        cursor: pointer;
-    }
-
-    /* Hover Effects */
-    .hover\:bg-\[\#D2691E\]:hover {
-        background: #D2691E;
-    }
-
-    .hover\:text-\[\#D2691E\]:hover {
-        color: #D2691E;
-    }
-
-    .hover\:text-red-800:hover {
-        color: #991b1b;
-    }
-
-    .hover\:text-green-800:hover {
-        color: #166534;
-    }
-
-    .hover\:text-yellow-800:hover {
-        color: #854d0e;
-    }
-
-    /* Focus States */
-    .focus\:ring-2:focus {
-        box-shadow: 0 0 0 2px var(--pageturner-accent);
-    }
-
-    .focus\:border-var\(--pageturner-primary\):focus {
-        border-color: var(--pageturner-primary);
-    }
+  :root {
+    --pageturner-primary:   #8B4513;
+    --pageturner-secondary:  #D2691E;
+    --pageturner-accent:     #F4A460;
+    --pageturner-light:      #F5EBDC;
+    --pageturner-very-light: #FDF8F0;
+    --pageturner-dark:       #5D4037;
+    --pageturner-text:       #3F2A1D;
+    --pageturner-shadow:     0 10px 30px rgba(139,69,19,0.18);
+  }
+
+  .page-turner-font { font-family:'Playfair Display',Georgia,serif; }
+
+  /* ── Voice search bar ─────────────────────────────────── */
+  .voice-search-bar {
+    display:flex; align-items:center; gap:.7rem;
+    max-width:640px; margin:0 auto;
+    background:#fff; border:2px solid rgba(139,69,19,.15);
+    border-radius:999px; padding:.45rem .8rem;
+    box-shadow:0 4px 12px rgba(139,69,19,.09);
+    transition:all .28s ease;
+  }
+  .voice-search-bar:focus-within { border-color:var(--pageturner-accent); box-shadow:0 4px 20px rgba(139,69,19,.15); }
+  .voice-search-bar input {
+    flex:1; border:none; outline:none; background:transparent;
+    font-family:'Georgia',serif; font-size:.97rem;
+    color:var(--pageturner-text); padding:.35rem 0;
+  }
+  .voice-search-bar input::placeholder { color:#b0a090; }
+  .voice-btn {
+    width:40px; height:40px; border-radius:999px; border:none; cursor:pointer;
+    background:linear-gradient(135deg,var(--pageturner-primary),var(--pageturner-secondary));
+    color:#fff; display:flex; align-items:center; justify-content:center;
+    transition:all .3s ease; flex-shrink:0;
+  }
+  .voice-btn:hover  { transform:scale(1.08); box-shadow:0 4px 14px rgba(139,69,19,.35); }
+  .voice-btn.recording { animation:pulse-ring 1.3s ease-in-out infinite; }
+  @keyframes pulse-ring { 0%,100%{box-shadow:0 0 0 0 rgba(244,164,96,.7);} 50%{box-shadow:0 0 0 10px rgba(244,164,96,0);} }
+
+  .transcript-chip {
+    display:none; max-width:640px; margin:.6rem auto 0;
+    background:#fff7ed; border:1px solid #fdba74; border-radius:12px;
+    padding:.6rem 1rem; font-size:.88rem; color:#92400e;
+  }
+  .transcript-chip.visible { display:block; }
+  .transcript-chip strong  { font-weight:700;color:#7c2d12; }
+
+  /* ── OpenAPI key warning ───────────────────────────────── */
+  .api-config-warn {
+    max-width:700px;margin:1rem auto;
+    background:#fff7ed;border:1.5px solid #fdba74;border-radius:12px;
+    padding:1rem 1.4rem;font-size:.9rem;color:#92400e;text-align:center;
+  }
+
+  /* ── Filter bar ────────────────────────────────────────── */
+  .browse-filter-bar {
+    display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;
+    margin:1.5rem 0;
+  }
+  .browse-filter-btn {
+    padding:.38rem 1.1rem;border-radius:999px;font-size:.85rem;font-weight:600;
+    border:1.5px solid rgba(139,69,19,.2);background:#fff;
+    color:var(--pageturner-text);cursor:pointer;transition:all .22s ease;
+    text-decoration:none;display:inline-block;
+  }
+  .browse-filter-btn:hover, .browse-filter-btn.active {
+    background:var(--pageturner-primary);color:#fff;border-color:var(--pageturner-primary);
+  }
+
+  /* ── Grid ──────────────────────────────────────────────── */
+  .books-grid {
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:1.6rem;
+  }
+
+  /* ── Book card inline for voice results ────────────────── */
+  .voice-result-card {
+    background:#fff;border-radius:1rem;overflow:hidden;
+    transition:var(--pageturner-transition);
+    border:1px solid rgba(139,69,19,.12);
+    box-shadow:0 10px 30px rgba(139,69,19,.15);
+  }
+  .voice-result-card:hover { transform:translateY(-6px); }
+
+  .ai-callout {
+    background:#ecfdf5;border:1px solid #6ee7b7;border-radius:999px;
+    color:#065f46;font-size:.72rem;font-weight:600;
+    padding:.22rem .6rem;display:inline-flex;align-items:center;gap:.3rem;
+  }
+
+  .section-heading {
+    font-size:clamp(1.4rem,2vw+.6rem,2rem);
+    font-weight:700;color:var(--pageturner-primary);
+    margin-bottom:.3rem;
+  }
+  .section-sub { font-size:.95rem;color:#6b7280;margin-bottom:1.4rem; }
+
+  @media(max-width:640px){
+    .voice-search-bar { border-radius:14px; }
+  }
 </style>
 
-<!-- Alpine.js for Advanced Filters Toggle -->
-<script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<div
+  x-data="booksBrowse()"
+  x-init="init()"
+  class="pt-6 md:pt-10"
+  role="main"
+>
 
-<div class="main-container">
-    <!-- Search and Filter Section -->
-    <div class="filter-section">
-        <form action="{{ route('books.index') }}" method="GET" class="filter-form">
-            <!-- Main Filters Row - Horizontal Layout -->
-            <div class="filter-row">
-                <!-- Search Bar -->
-                <div class="search-wrapper">
-                    <div class="search-input-container">
-                        <div class="search-icon">
-                            <svg class="search-icon-svg" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                            </svg>
-                        </div>
-                        <input type="text"
-                               name="search" 
-                               value="{{ request('search') }}"
-                               placeholder="Search by title, author, or ISBN..."
-                               class="search-input">
-                    </div>
-                </div>
-                
-                <!-- Category Filter -->
-                <div>
-                    <select name="category" class="filter-select">
-                        <option value="">All Categories</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}" 
-                                    {{ request('category') == $category->id ? 'selected' : '' }}>
-                                {{ $category->name }} ({{ $category->books_count ?? 0 }})
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                
-                <!-- Sort Options -->
-                <div>
-                    <select name="sort" class="filter-select">
-                        <option value="">Sort by</option>
-                        <option value="title_asc" {{ request('sort') == 'title_asc' ? 'selected' : '' }}>Title A-Z</option>
-                        <option value="title_desc" {{ request('sort') == 'title_desc' ? 'selected' : '' }}>Title Z-A</option>
-                        <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>Price: Low to High</option>
-                        <option value="price_desc" {{ request('sort') == 'price_desc' ? 'selected' : '' }}>Price: High to Low</option>
-                        <option value="rating_desc" {{ request('sort') == 'rating_desc' ? 'selected' : '' }}>Highest Rated</option>
-                        <option value="newest" {{ request('sort') == 'newest' ? 'selected' : '' }}>Newest First</option>
-                        <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Oldest First</option>
-                    </select>
-                </div>
-                
-                <!-- Price Range -->
-                <div>
-                    <select name="price_range" class="filter-select small">
-                        <option value="">All Prices</option>
-                        <option value="0-25" {{ request('price_range') == '0-25' ? 'selected' : '' }}>Under ₱25</option>
-                        <option value="25-50" {{ request('price_range') == '25-50' ? 'selected' : '' }}>₱25 - ₱50</option>
-                        <option value="50-100" {{ request('price_range') == '50-100' ? 'selected' : '' }}>₱50 - ₱100</option>
-                        <option value="100-500" {{ request('price_range') == '100-500' ? 'selected' : '' }}>Over ₱100</option>
-                    </select>
-                </div>
-            </div>
-            
-            <!-- Advanced Filters (Collapsible) -->
-            <div x-data="{ showAdvanced: false }">
-                <button type="button" 
-                        @click="showAdvanced = !showAdvanced"
-                        class="advanced-toggle">
-                    <span>Advanced Filters</span>
-                    <svg class="toggle-icon" 
-                        :class="{ 'rotated': showAdvanced }" 
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                    </svg>
-                </button>
-                
-                <div x-show="showAdvanced" 
-                    x-transition:enter="transition ease-out duration-200"
-                    x-transition:enter-start="opacity-0"
-                    x-transition:enter-end="opacity-100"
-                    class="advanced-panel">
-                    <div class="advanced-grid">
-                        <!-- Stock Status - Now using stock_quantity -->
-                        <div>
-                            <label class="filter-label">Stock Status</label>
-                            <div class="checkbox-group">
-                                <label class="checkbox-label">
-                                    <input type="checkbox" 
-                                        name="in_stock" 
-                                        value="1" 
-                                        {{ request('in_stock') ? 'checked' : '' }}
-                                        class="checkbox-input">
-                                    <span class="checkbox-text">In Stock Only</span>
-                                </label>
-                                <label class="checkbox-label">
-                                    <input type="checkbox" 
-                                        name="low_stock" 
-                                        value="1" 
-                                        {{ request('low_stock') ? 'checked' : '' }}
-                                        class="checkbox-input">
-                                    <span class="checkbox-text">Low Stock (1-5 items)</span>
-                                </label>
-                            </div>
-                        </div>
-                        
-                        <!-- Rating Filter -->
-                        <div>
-                            <label class="filter-label">Minimum Rating</label>
-                            <select name="min_rating" class="filter-select">
-                                <option value="">Any Rating</option>
-                                <option value="4" {{ request('min_rating') == '4' ? 'selected' : '' }}>4 Stars & Above</option>
-                                <option value="3" {{ request('min_rating') == '3' ? 'selected' : '' }}>3 Stars & Above</option>
-                                <option value="2" {{ request('min_rating') == '2' ? 'selected' : '' }}>2 Stars & Above</option>
-                            </select>
-                        </div>
-                        
-                        <!-- Publication Year - Using published_year -->
-                        <div>
-                            <label class="filter-label">Publication Year</label>
-                            <input type="number" 
-                                name="year" 
-                                value="{{ request('year') }}"
-                                placeholder="e.g., 2023"
-                                min="1900" 
-                                max="{{ date('Y') }}"
-                                class="search-input">
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Form Actions -->
-            <div class="form-actions">
-                <div class="filter-count">
-                    @if(request()->hasAny(['search', 'category', 'sort', 'price_range', 'in_stock', 'low_stock', 'min_rating', 'year']))
-                        <a href="{{ route('books.index') }}" class="clear-filters">
-                            Clear All Filters
-                        </a>
-                    @endif
-                </div>
-                <div class="button-group">
-                    <button type="submit" class="apply-btn">
-                        <svg class="apply-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                        Apply Filters
-                    </button>
-                </div>
-            </div>
-        </form>
+  <!-- ── Voice Search Bar ──────────────────────────────────── -->
+  <div style="padding:2.5rem 0 0;">
+    <div class="text-center mb-5">
+      <h1 class="section-heading page-turner-font">📚 Browse Books</h1>
+      <p class="section-sub">Search by voice or type a title, author, or genre below.</p>
     </div>
 
-    <!-- Results Summary -->
-    @if(request()->hasAny(['search', 'category', 'sort', 'price_range', 'in_stock', 'low_stock', 'min_rating', 'year']))
-        <div class="results-summary">
-            <div class="summary-card">
-                <div class="summary-content">
-                    <div>
-                        <span class="summary-text">
-                            {{ $books->total() }} book{{ $books->total() !== 1 ? 's' : '' }} found
-                        </span>
-                        @if(request('search'))
-                            <span class="summary-query">
-                                for "{{ request('search') }}"
-                            </span>
-                        @endif
-                    </div>
-                    <div class="filter-tags">
-                        @if(request('category'))
-                            @php
-                                $selectedCategory = $categories->firstWhere('id', request('category'));
-                            @endphp
-                            <span class="filter-tag">
-                                Category: {{ $selectedCategory->name ?? 'Unknown' }}
-                                <a href="{{ url()->current() . '?' . http_build_query(request()->except('category')) }}" 
-                                class="tag-remove">
-                                    &times;
-                                </a>
-                            </span>
-                        @endif
-                        
-                        @if(request('in_stock'))
-                            <span class="filter-tag in-stock">
-                                In Stock Only
-                                <a href="{{ url()->current() . '?' . http_build_query(request()->except('in_stock')) }}" 
-                                class="tag-remove">
-                                    &times;
-                                </a>
-                            </span>
-                        @endif
-                        
-                        @if(request('low_stock'))
-                            <span class="filter-tag">
-                                Low Stock
-                                <a href="{{ url()->current() . '?' . http_build_query(request()->except('low_stock')) }}" 
-                                class="tag-remove">
-                                    &times;
-                                </a>
-                            </span>
-                        @endif
-                        
-                        @if(request('min_rating'))
-                            <span class="filter-tag rating">
-                                {{ request('min_rating') }}+ Stars
-                                <a href="{{ url()->current() . '?' . http_build_query(request()->except('min_rating')) }}" 
-                                class="tag-remove">
-                                    &times;
-                                </a>
-                            </span>
-                        @endif
-                        
-                        @if(request('year'))
-                            <span class="filter-tag">
-                                Year: {{ request('year') }}
-                                <a href="{{ url()->current() . '?' . http_build_query(request()->except('year')) }}" 
-                                class="tag-remove">
-                                    &times;
-                                </a>
-                            </span>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="voice-search-bar" role="search" aria-label="Voice book search">
+      <svg width="18" height="18" fill="none" stroke="var(--pageturner-secondary)" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+      </svg>
+      <input
+        type="search"
+        placeholder="Type or speak a book title, author, or genre…"
+        aria-label="Search books"
+        x-model="searchQuery"
+        @keydown.enter="performSearch()"
+        @input="onTyping()"
+        autocomplete="off" spellcheck="false"
+      >
+      <button type="button"
+        class="voice-btn"
+        :class="{recording: isRecording}"
+        :title="isRecording ? 'Stop' : 'Voice Search'"
+        :aria-label="isRecording ? 'Stop recording' : 'Start voice search'"
+        @click="toggleRecording()">
+        <svg x-show="!isRecording" width="18" height="18" fill="white" viewBox="0 0 24 24">
+          <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+        </svg>
+        <svg x-show="isRecording" width="18" height="18" fill="white" viewBox="0 0 24 24">
+          <path d="M6 6h12v12H6z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Transcript chip -->
+    <div class="transcript-chip" :class="{visible: transcript}" x-show="transcript" role="status">
+      🎙 <strong>You said:</strong> <span x-text="transcript"></span>
+    </div>
+
+    @if(!$openaiConfigured)
+      <div class="api-config-warn">
+        ⚠️ <strong>OpenAI API key not yet configured.</strong><br>
+        Voice search and AI-written audio descriptions require an OpenAI key.
+        <code>OPENAI_API_KEY</code> in your <code>.env</code> unlocks voice search &amp; narration.
+        Browse the full book catalogue works without it.
+      </div>
     @endif
+  </div>
 
-    <!-- Books Grid -->
-    @if($books->count() > 0)
-        <div class="books-grid">
-            @foreach($books as $book)
-                <x-book-card :book="$book" />
-            @endforeach
-        </div>
+  <!-- ── Category Filters ──────────────────────────────────── -->
+  @if($categories->isNotEmpty())
+    <div class="browse-filter-bar" role="group" aria-label="Filter by category">
+      <a
+        class="browse-filter-btn"
+        :class="{active:@js(request()->filled('category')?'true':'false')}"
+        href="{{ route('books.index') }}">All</a>
+      @foreach($categories as $cat)
+        <a
+          class="browse-filter-btn"
+          :class="{active:@js(request('category')==$cat->id?'true':'false')}"
+          href="{{ route('books.index', ['category'=>$cat->id]) }}">{{ $cat->name }}</a>
+      @endforeach
+    </div>
+  @endif
 
-        <!-- Pagination -->
-        <div class="pagination-wrapper">
-            {{ $books->withQueryString()->links() }}
-        </div>
-    @else
-        <div class="empty-state">
-            <svg class="empty-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                      d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+  <!-- ── Server-Rendered Paginated Book Grid ────────────────── -->
+  <div class="books-grid">
+    @forelse($books as $book)
+      <x-book-card :book="$book">
+        {{-- AI narrated callout (before title) --}}
+        <x-slot name="aiCalloutTitleTopSlot">
+          <span class="ai-callout">✨ AI narrated</span>
+        </x-slot>
+
+        {{-- TTS Listen button after price, before stock info --}}
+        <x-slot name="aiTtsAfterPriceSlot">
+          <button type="button"
+            class="listen-btn"
+            onclick="(function(id){const a=document.getElementById('tts-'+id);if(!a.src){a.src='/ai/audio/tts/'+id;}a.play().catch(function(){});})({{ (string)$book->id }});">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.06c1.48-.73 2.5-2.25 2.5-4.03z"/>
             </svg>
-            <h3 class="empty-title">No books found</h3>
-            <p class="empty-text">
-                @if(request()->hasAny(['search', 'category', 'price_range']))
-                    No books match your search criteria. Try adjusting your filters.
-                @else
-                    No books are currently available in our collection.
-                @endif
-            </p>
-            @if(request()->hasAny(['search', 'category', 'price_range']))
-                <div class="empty-action">
-                    <a href="{{ route('books.index') }}" class="clear-btn">
-                        Clear Filters
-                    </a>
-                </div>
-            @endif
-        </div>
-    @endif
-</div>
-@endsection
+            🎧 Listen
+          </button>
+          <audio id="tts-{{ (string)$book->id }}"></audio>
+        </x-slot>
 
-@push('scripts')
+        {{-- Custom action buttons (View Details + Add to Cart) --}}
+        <x-slot name="aiCustomActionButtonsSlot">
+          <a href="{{ route('books.show', $book) }}" class="view-details-btn">View Details</a>
+          @auth
+            @if(!auth()->user()->isAdmin() && $book->stock_quantity > 0 && auth()->user()->hasVerifiedEmail())
+              <form action="{{ route('cart.add', $book) }}" method="POST" class="flex-1">
+                @csrf
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="add-to-cart-btn">Add to Cart</button>
+              </form>
+            @endif
+          @else
+            @if($book->stock_quantity > 0)
+              <a href="{{ route('login') }}" class="login-prompt-btn">Login to Buy</a>
+            @endif
+          @endauth
+        </x-slot>
+      </x-book-card>
+    @empty
+      <div class="content-card p-10 text-center" style="grid-column:1/-1;" x-show="!transcript">
+        <div style="font-size:3rem;margin-bottom:.8rem;opacity:.7;">📚</div>
+        <h3 class="text-xl font-bold" style="color:var(--pageturner-dark);">No books found</h3>
+        <p style="color:#6b7280;margin-top:.4rem;">Try a different category or search term.</p>
+      </div>
+      <div class="content-card p-10 text-center" style="grid-column:1/-1;" x-show="transcript">
+        <div style="font-size:2.8rem;margin-bottom:.8rem;opacity:.6;">🔍</div>
+        <h3 class="text-xl font-bold" style="color:var(--pageturner-dark);">No books for <em x-text="transcript"></em></h3>
+        <p style="color:#6b7280;margin-top:.4rem;">Try saying it a different way, or type to refine your search.</p>
+        <button type="button" @click="searchQuery=''; transcript='';"
+          style="margin-top:.9rem;padding:.45rem 1.2rem;border-radius:999px;border:1.5px solid var(--pageturner-primary);
+                 background:var(--pageturner-light);color:var(--pageturner-primary);font-weight:600;cursor:pointer;">
+          Clear &amp; start over
+        </button>
+      </div>
+    @endforelse
+  </div>
+
+  <!-- ── Pagination ─────────────────────────────────────────── -->
+  @if($books->hasPages())
+    <nav aria-label="Pagination" class="flex justify-center gap-2 mt-8">
+      @if($books->onFirstPage())
+        <span class="browse-filter-btn" style="opacity:.5;cursor:default;">← Prev</span>
+      @else
+        <a class="browse-filter-btn" href="{{ $books->previousPageUrl() }}">← Prev</a>
+      @endif
+
+      <span style="align-self:center;font-size:.9rem;color:#6b7280;padding:0 .5rem;">
+        Page {{ $books->currentPage() }} of {{ $books->lastPage() }}
+      </span>
+
+      @if($books->hasMorePages())
+        <a class="browse-filter-btn" href="{{ $books->nextPageUrl() }}">Next →</a>
+      @else
+        <span class="browse-filter-btn" style="opacity:.5;cursor:default;">Next →</span>
+      @endif
+    </nav>
+  @endif
+
+  <!-- ── Stats bar ──────────────────────────────────────────── -->
+  @if(isset($stats))
+    <div style="display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap;margin-top:2rem;padding-top:1.5rem;border-top:1px solid rgba(139,69,19,.1);">
+      <span style="font-size:.82rem;color:#6b7280;">Total books: <strong style="color:var(--pageturner-dark);">{{ number_format($stats['total_books']) }}</strong></span>
+      <span style="font-size:.82rem;color:#6b7280;">In stock: <strong style="color:#16a34a;">{{ number_format($stats['total_stock']) }}</strong></span>
+      <span style="font-size:.82rem;color:#6b7280;">Low stock: <strong style="color:#ca8a04;">{{ $stats['low_stock_count'] }}</strong></span>
+      <span style="font-size:.82rem;color:#6b7280;">Out of stock: <strong style="color:var(--pageturner-error);">{{ $stats['out_of_stock_count'] }}</strong></span>
+      <span style="font-size:.82rem;color:#6b7280;">Total value: <strong style="color:var(--pageturner-primary);">₱{{ number_format($stats['total_value'],2) }}</strong></span>
+    </div>
+  @endif
+</div><!-- /x-data -->
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('filter-form');
-        
-        // Auto-submit for select changes
-        const selectFilters = document.querySelectorAll('select[name="sort"], select[name="price_range"], select[name="min_rating"], select[name="category"]');
-        
-        selectFilters.forEach(filter => {
-            filter.addEventListener('change', function() {
-                form.submit();
-            });
-        });
-        
-        // Optional: Auto-submit for checkbox changes (with debounce)
-        const checkboxFilters = document.querySelectorAll('input[type="checkbox"]');
-        checkboxFilters.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                // Update hidden inputs
-                if (this.id === 'in_stock_checkbox') {
-                    document.getElementById('in_stock_hidden').disabled = this.checked;
-                }
-                if (this.id === 'low_stock_checkbox') {
-                    document.getElementById('low_stock_hidden').disabled = this.checked;
-                }
-                form.submit();
-            });
-        });
-    });
+(function(){
+  function booksBrowse(){
+    return {
+      searchQuery  : '',
+      transcript   : '',
+      isRecording  : false,
+      mediaRecorder: null,
+      typingTimer  : null,
+
+      init(){}, // Can add inline Alpine announcements here
+
+      onTyping(){
+        clearTimeout(this.typingTimer);
+        this.typingTimer = setTimeout(() => this.performSearch(), 700);
+      },
+
+      async performSearch(){
+        const q = this.searchQuery.trim();
+        if(!q) return;
+        // Navigate to the native search — preserves pagination & filters
+        const url = new URL('{{ route("books.index") }}', window.location.href);
+        url.searchParams.set('search', q);
+        window.location.href = url.toString();
+      },
+
+      async toggleRecording(){
+        if(this.isRecording){ this.stopRecording(); return; }
+        try{
+          const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+          this.mediaRecorder = new MediaRecorder(stream);
+          const chunks=[];
+          this.mediaRecorder.ondataavailable = e => chunks.push(e.data);
+          this.mediaRecorder.onstop = async () => {
+            const blob = new Blob(chunks,{type:'audio/webm'});
+            stream.getTracks().forEach(t=>t.stop());
+            await this.sendAudio(blob);
+          };
+          this.mediaRecorder.start();
+          this.isRecording = true;
+        }catch(err){
+          alert('Microphone access was denied. Please allow microphone access and try again.');
+          console.error(err);
+        }
+      },
+
+      stopRecording(){
+        if(this.mediaRecorder && this.mediaRecorder.state !== 'inactive'){
+          this.mediaRecorder.stop();
+        }
+        this.isRecording = false;
+      },
+
+      async sendAudio(blob){
+        const fd  = new FormData();
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+        fd.append('audio_data', blob, 'voice.webm');
+        fd.append('filename',   'voice.webm');
+        fd.append('limit',      12);
+        if(csrf) fd.append('_token', csrf);
+
+        try{
+          const r = await fetch('/ai/voice-search',{method:'POST',body:fd,
+            headers: csrf ? {'X-CSRF-TOKEN': csrf} : {}
+          });
+          const ct = r.headers.get('content-type') || '';
+          if(!ct.includes('application/json')){
+            const txt = await r.text();
+            throw new Error(txt.substring(0,200) || 'Unexpected response (HTTP '+r.status+')');
+          }
+          if(!r.ok) throw new Error((await r.json()).message || 'Search failed (HTTP '+r.status+')');
+          const data = await r.json();
+
+          const transcript  = (data.transcript || '').trim();
+          const corrected   = (data.corrected_query || transcript).trim();
+          const hasResults  = data.results && data.results.length > 0;
+
+          // ── Update search bar & show transcript chip regardless ──────────
+          this.transcript  = data.transcript || '';
+          this.searchQuery = corrected;          // typed voice fit in search bar
+          document.querySelector('.transcript-chip')?.classList.add('visible');
+
+          // ── CASE A — No voice detected (silence / empty audio) ──────────
+          if(!transcript){
+            // Don't alert — just turn off and stay on browse view
+            this.isRecording = false;
+            return;
+          }
+
+          // ── CASE B — Voice heard but NO matching books ──────────────────
+          if(!hasResults){
+            // Keep search bar populated so user can edit; show friendly hint
+            document.querySelector('.transcript-chip')?.classList.add('visible');
+            // Trigger the native text-search so the book grid updates (likely empty)
+            const url = new URL('{{ route("books.index") }}', window.location.href);
+            url.searchParams.set('search', corrected);
+            window.location.href = url.toString();
+            return;
+          }
+
+          // ── CASE C — Voice heard + results found ────────────────────────
+          // Source the AI-corrected query and do the server search
+          const url = new URL('{{ route("books.index") }}', window.location.href);
+          url.searchParams.set('search', corrected);
+          window.location.href = url.toString();
+
+        }catch(e){
+          console.error('Voice search error:', e);
+          alert('Voice search failed: ' + e.message);
+        }finally{
+          this.isRecording = false;
+        }
+      },
+    };
+  }
+  document.addEventListener('alpine:init',()=>{ window.booksBrowse = booksBrowse; });
+})();
 </script>
-@endpush
+@endsection

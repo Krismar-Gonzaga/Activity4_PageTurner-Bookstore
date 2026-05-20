@@ -16,10 +16,31 @@
     </style>
 </head>
 <body>
+    @php
+        $totalOrders = $orders->count();
+        $grandTotalAmount = $orders->sum('total_amount');
+    @endphp
+
     <div class="header">
         <h1>My Order History</h1>
         <p>{{ $user->name }} | {{ $user->email }}</p>
         <p>Generated: {{ date('F j, Y g:i A') }}</p>
+    </div>
+
+    <div style="border: 1px solid #ddd; padding: 12px; margin-bottom: 20px; background: #fafafa;">
+        <h3 style="margin: 0 0 8px;">Amount Summary</h3>
+        <table>
+            <tbody>
+                <tr>
+                    <td style="width: 60%;"><strong>Total Orders</strong></td>
+                    <td>{{ $totalOrders }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Grand Total Amount</strong></td>
+                    <td><strong>₱{{ number_format($grandTotalAmount, 2) }}</strong></td>
+                </tr>
+            </tbody>
+        </table>
     </div>
     
     @foreach($orders as $order)

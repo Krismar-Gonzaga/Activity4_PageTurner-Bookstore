@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\AuditLogService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -28,6 +29,7 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
+        $oldValues = $user->only(['name', 'email']);
         
         // Update name and email
         $user->fill($request->validated());
@@ -38,7 +40,13 @@ class ProfileController extends Controller
 
         $user->save();
         
-        
+        AuditLogService::log(
+            'profile_update',
+            get_class($user),
+            $user->id,
+            $oldValues,
+            $user->only(['name', 'email'])
+        );
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
@@ -80,6 +88,12 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+        
+        AuditLogService::log(
+            'account_deletion',
+            get_class($user),
+            $user->id
+        );
 
         Auth::logout();
 

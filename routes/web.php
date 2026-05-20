@@ -11,6 +11,8 @@ use App\Http\Controllers\TwoFactorVerifyController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\InventoryController;
+use App\Http\Controllers\AIVoiceSearchController;
+use App\Http\Controllers\AIAudioDescriptionController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -20,7 +22,7 @@ use Illuminate\Http\Request;
 Auth::routes();
 
 // Login routes with AJAX support
-Route::post('/login/ajax', [LoginController::class, 'ajaxLogin'])->name('login.ajax');
+Route::post('/login/ajax', [TwoFactorController::class, 'ajaxLogin'])->name('login.ajax');
 
 // 2FA routes
 Route::middleware('guest')->group(function () {
@@ -53,6 +55,21 @@ Route::post('/email/verification-notification', function (Request $request) {
     return back()->with('resent', true);
 })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
+
+// ── AI Voice Search ────────────────────────────────────────────────
+// 'none' auth so the search bar widget works on the landing page
+Route::post('/ai/voice-search', [AIVoiceSearchController::class, 'search'])->name('ai.voice-search');
+Route::get('/ai/voice-search/test', [AIVoiceSearchController::class, 'searchText'])->name('ai.voice-search.test');
+
+// ── AI Audio Description ────────────────────────────────────────────
+Route::get('/ai/audio-description/{book}', [AIAudioDescriptionController::class, 'show'])
+    ->whereNumber('book')->name('ai.audio-description.show');
+Route::post('/ai/audio-description/{book}/generate', [AIAudioDescriptionController::class, 'generate'])
+    ->middleware('auth')->whereNumber('book')->name('ai.audio-description.generate');
+Route::get('/ai/audio/tts/{book}', [AIAudioDescriptionController::class, 'tts'])
+    ->whereNumber('book')->name('ai.audio.tts');
+Route::get('/ai/browse', [AIAudioDescriptionController::class, 'browse'])
+    ->name('ai.browse');
 
 // Public routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -235,6 +252,8 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
 
 // Admin Order Exports
 Route::middleware(['auth'])->prefix('admin')->group(function () {
+    Route::get('/orders/export', [App\Http\Controllers\Admin\OrderExportController::class, 'index'])
+        ->name('admin.orders.export.index');
     Route::post('/orders/export', [App\Http\Controllers\Admin\OrderExportController::class, 'exportOrders'])
         ->name('admin.orders.export');
     Route::get('/orders/export/status/{id}', [App\Http\Controllers\Admin\OrderExportController::class, 'getExportStatus'])
@@ -247,12 +266,54 @@ Route::middleware(['auth'])->prefix('admin')->group(function () {
         ->name('admin.reports.revenue.export');
     Route::get('/reports/tax/export', [App\Http\Controllers\Admin\OrderExportController::class, 'exportTaxReport'])
         ->name('admin.reports.tax.export');
-    
+
     // Scheduled Exports
     Route::get('/exports/scheduled', [App\Http\Controllers\Admin\OrderExportController::class, 'listScheduledExports'])
         ->name('admin.exports.scheduled');
     Route::post('/exports/scheduled', [App\Http\Controllers\Admin\OrderExportController::class, 'createScheduledExport'])
         ->name('admin.exports.scheduled.create');
+
+    // ── AI Sales Prediction & Inventory Optimization ─────────────────────────
+    Route::get('/predictions', [App\Http\Controllers\Admin\PredictionController::class, 'index'])
+        ->name('admin.predictions.index');
+    Route::post('/predictions/refresh', [App\Http\Controllers\Admin\PredictionController::class, 'refresh'])
+        ->name('admin.predictions.refresh');
+    Route::get('/predictions/{prediction}', [App\Http\Controllers\Admin\PredictionController::class, 'show'])
+        ->name('admin.predictions.show');
+
+    // ── AI Voice Search & Audio Description ──────────────────────────────────
+    Route::get('/ai/audio-descriptions/regenerate', [App\Http\Controllers\AdminAudioController::class, 'regenerate'])
+        ->name('admin.ai.audio-descriptions.regenerate');
+    Route::get('/ai/usage', [App\Http\Controllers\AdminAudioController::class, 'usage'])
+        ->name('admin.ai.usage');
+    Route::post('/ai/usage/clear', [App\Http\Controllers\AdminAudioController::class, 'clearOldLogs'])
+        ->name('admin.ai.usage.clear');
+
+    // ── Audit Logs ──────────────────────────────────────────────────────────
+    Route::middleware(['auth', 'can:viewAny,App\Models\AuditLog'])->group(function () {
+        Route::get('/audit-logs', [App\Http\Controllers\Admin\AuditLogController::class, 'index'])
+            ->name('admin.audit-logs.index');
+        Route::get('/audit-logs/{id}', [App\Http\Controllers\Admin\AuditLogController::class, 'show'])
+            ->name('admin.audit-logs.show');
+        Route::get('/audit-logs/export', [App\Http\Controllers\Admin\AuditLogController::class, 'export'])
+            ->name('admin.audit-logs.export');
+        Route::post('/audit-logs/verify-integrity', [App\Http\Controllers\Admin\AuditLogController::class, 'verifyIntegrity'])
+            ->name('admin.audit-logs.verify');
+        Route::post('/audit-logs/backup', [App\Http\Controllers\Admin\AuditLogController::class, 'backup'])
+            ->name('admin.audit-logs.backup');
+    });
+
+    // ── Database Backup Management ─────────────────────────────────────────
+    Route::get('/backups', [App\Http\Controllers\Admin\BackupController::class, 'index'])
+        ->name('admin.backups.index');
+    Route::post('/backups', [App\Http\Controllers\Admin\BackupController::class, 'store'])
+        ->name('admin.backups.store');
+    Route::delete('/backups/{filename}', [App\Http\Controllers\Admin\BackupController::class, 'destroy'])
+        ->name('admin.backups.destroy');
+    Route::post('/backups/clean', [App\Http\Controllers\Admin\BackupController::class, 'clean'])
+        ->name('admin.backups.clean');
+    Route::get('/backups/health', [App\Http\Controllers\Admin\BackupController::class, 'health'])
+        ->name('admin.backups.health');
 });
 
 // Customer Order Export
